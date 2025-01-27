@@ -57,8 +57,8 @@ const CONFIG = {
     ATTRACTION_STRENGTH: 6.0,
     PARTICLE_OPACITY: 0.5,
     PARTICLE_COLOR: '#fadcdc',
+    BACKGROUND_COLOR: '#2c0b0b',
     PARTICLE_SIZE: 1.0,
-    BACKGROUND_COLOR: '#000000',
     IS_PLAYING: true // Add play/pause state
 };
 
@@ -135,13 +135,13 @@ const gui = new dat.GUI();
 gui.add(CONFIG, 'PARTICLE_COUNT', 1000, 1000000, 1000).name('Particle Count').onChange(v => updateConfig('PARTICLE_COUNT', v));
 gui.add(CONFIG, 'EDGE_THRESHOLD', 0.1, 5.0, 0.1).name('Edge Threshold').onChange(v => updateConfig('EDGE_THRESHOLD', v));
 gui.add(CONFIG, 'PARTICLE_SPEED', 0.0001, 0.1, 0.0001).name('Particle Speed').onChange(v => updateConfig('PARTICLE_SPEED', v));
-gui.add(CONFIG, 'SEARCH_RADIUS', 0.1, 100.0, 0.1).name('Search Radius').onChange(v => updateConfig('SEARCH_RADIUS', v));
 gui.add(CONFIG, 'RANDOM_STRENGTH', 0.0, 1000.0, 0.1).name('Random Strength').onChange(v => updateConfig('RANDOM_STRENGTH', v));
+gui.add(CONFIG, 'SEARCH_RADIUS', 0.1, 100.0, 0.1).name('Search Radius').onChange(v => updateConfig('SEARCH_RADIUS', v));
 gui.add(CONFIG, 'ATTRACTION_STRENGTH', 0.0, 50.0, 0.1).name('Attraction Strength').onChange(v => updateConfig('ATTRACTION_STRENGTH', v));
 gui.add(CONFIG, 'PARTICLE_OPACITY', 0.1, 1.0, 0.1).name('Particle Opacity').onChange(v => updateConfig('PARTICLE_OPACITY', v));
-gui.add(CONFIG, 'PARTICLE_SIZE', 1.0, 10.0, 0.5).name('Particle Size').onChange(v => updateConfig('PARTICLE_SIZE', v));
-gui.addColor(CONFIG, 'PARTICLE_COLOR').name('Particle Color').onChange(v => updateConfig('PARTICLE_COLOR', v));
-gui.addColor(CONFIG, 'BACKGROUND_COLOR').name('Background Color').onChange(v => {
+gui.add(CONFIG, 'PARTICLE_SIZE', 1.0, 4.0, 0.5).name('Particle Size').onChange(v => updateConfig('PARTICLE_SIZE', v));
+gui.addColor(CONFIG, 'PARTICLE_COLOR').name('Particle Color').onFinishChange(v => updateConfig('PARTICLE_COLOR', v));
+gui.addColor(CONFIG, 'BACKGROUND_COLOR').name('Background Color').onFinishChange(v => {
     CONFIG.BACKGROUND_COLOR = v;
     updateBackgroundColor();
 });

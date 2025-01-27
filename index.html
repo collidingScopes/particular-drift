@@ -55,107 +55,111 @@ void main() {
 
     <!-- Update Vertex Shader -->
     <script type="x-shader/x-vertex" id="updateVertexShader">#version 300 es
-in vec2 position;
-in vec2 velocity;
-in vec2 target;
-
-out vec2 vPosition;
-out vec2 vVelocity;
-out vec2 vTarget;
-
-uniform sampler2D edgeTexture;
-uniform float deltaTime;
-uniform vec2 resolution;
-uniform float particleSpeed;
-uniform float searchRadius;
-uniform float randomSpeed;
-uniform float randomStrength;
-uniform float attractionStrength;
-
-float rand(vec2 co) {
-    return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
-}
-
-void main() {
-    vec2 pos = position;
-    vec2 vel = velocity;
-    vec2 tgt = target;
-    
-    vec4 edge = texture(edgeTexture, pos);
-    
-    if (edge.r > 0.5) {
-        // Random movement when on edge, scaled by random strength
-        vel = vec2(
-            (rand(pos.xy) - 0.5) * randomSpeed * 0.1 * randomStrength,
-            (rand(pos.yx) - 0.5) * randomSpeed * 0.1 * randomStrength
-        );
-        tgt = vec2(-1.0);
-    } else if (tgt.x < 0.0) {
-        float closestDist = searchRadius;
-        vec2 closestEdge = pos;
-        bool foundEdge = false;
-        
-        for (float y = -5.0; y <= 5.0; y += 1.0) {
-            for (float x = -5.0; x <= 5.0; x += 1.0) {
-                vec2 offset = vec2(x, y) / resolution;
-                vec2 samplePos = pos + offset;
-                if (samplePos.x < 0.0 || samplePos.x > 1.0 || 
-                    samplePos.y < 0.0 || samplePos.y > 1.0) continue;
-                
-                vec4 sampleEdge = texture(edgeTexture, samplePos);
-                if (sampleEdge.r > 0.5) {
-                    float dist = length(offset);
-                    if (dist < closestDist) {
-                        closestDist = dist;
-                        closestEdge = samplePos;
-                        foundEdge = true;
-                    }
-                }
-            }
-        }
-        
-        if (foundEdge) {
-            tgt = closestEdge;
-            // Combine directed and random movement, scaled by their respective strengths
-            vec2 directedVel = normalize(closestEdge - pos) * particleSpeed * attractionStrength;
-            vec2 randomVel = vec2(rand(pos.xy) - 0.5, rand(pos.yx) - 0.5) * randomSpeed * randomStrength;
-            vel = directedVel + randomVel;
-        } else {
-            // Pure random movement when no edge found, scaled by random strength
-            float randAngle = rand(pos.xy) * 6.28318;
-            float randSpeed = rand(pos.yx) * randomSpeed * randomStrength;
-            vel += vec2(cos(randAngle), sin(randAngle)) * randSpeed;
-            vel *= 0.95;  // Damping
-        }
-    }
-    
-    if (tgt.x >= 0.0) {
-        vec2 toTarget = tgt - pos;
-        float dist = length(toTarget);
-        
-        if (dist < 0.001) {
-            tgt = vec2(-1.0);
-            float randAngle = rand(pos.xy) * 6.28318;
-            vel = vec2(cos(randAngle), sin(randAngle)) * randomSpeed * randomStrength;
-        } else {
-            // Combine directed and random movement when moving to target
-            vec2 directedVel = normalize(toTarget) * particleSpeed * attractionStrength;
-            vec2 randomVel = vec2(rand(pos.xy) - 0.5, rand(pos.yx) - 0.5) * randomSpeed * randomStrength;
-            vel = directedVel + randomVel;
-        }
-    }
-    
-    pos += vel * deltaTime;
-    
-    if (pos.x < 0.0) { pos.x = 0.0; vel.x *= -1.0; }
-    if (pos.x > 1.0) { pos.x = 1.0; vel.x *= -1.0; }
-    if (pos.y < 0.0) { pos.y = 0.0; vel.y *= -1.0; }
-    if (pos.y > 1.0) { pos.y = 1.0; vel.y *= -1.0; }
-    
-    vPosition = pos;
-    vVelocity = vel;
-    vTarget = tgt;
-}</script>
+      in vec2 position;
+      in vec2 velocity;
+      in vec2 target;
+      
+      out vec2 vPosition;
+      out vec2 vVelocity;
+      out vec2 vTarget;
+      
+      uniform sampler2D edgeTexture;
+      uniform float deltaTime;
+      uniform vec2 resolution;
+      uniform float particleSpeed;
+      uniform float searchRadius;
+      uniform float attractionStrength;
+      uniform float time;  // New uniform for time-based flow
+      
+      float rand(vec2 co) {
+          return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
+      }
+      
+      // Flow field function using simplex-like noise
+      vec2 flowField(vec2 position, float time) {
+          float scale = 4.0;  // Scale of the flow field
+          vec2 scaledPos = position * scale;
+          
+          // Create two offset sine waves for x and y components
+          float angle = sin(scaledPos.x + time * 0.2) * cos(scaledPos.y + time * 0.15) * 3.14159;
+          
+          // Create rotational flow vector
+          return vec2(cos(angle), sin(angle));
+      }
+      
+      void main() {
+          vec2 pos = position;
+          vec2 vel = velocity;
+          vec2 tgt = target;
+          
+          // Check if we're on an edge
+          vec4 edge = texture(edgeTexture, pos);
+          
+          if (edge.r > 0.5) {
+              // Particle is on an edge - keep it mostly still with slight movement
+              vel *= 0.95;  // Damping
+              vel += (vec2(rand(pos.xy), rand(pos.yx)) - 0.5) * 0.0001;  // Tiny random movement
+              tgt = vec2(-1.0);
+          } else {
+              // Not on edge - check for nearby edges
+              float closestDist = searchRadius;
+              vec2 closestEdge = pos;
+              bool foundEdge = false;
+              
+              // Search for nearby edges
+              for (float y = -5.0; y <= 5.0; y += 1.0) {
+                  for (float x = -5.0; x <= 5.0; x += 1.0) {
+                      vec2 offset = vec2(x, y) / resolution;
+                      vec2 samplePos = pos + offset;
+                      
+                      if (samplePos.x < 0.0 || samplePos.x > 1.0 || 
+                          samplePos.y < 0.0 || samplePos.y > 1.0) continue;
+                      
+                      vec4 sampleEdge = texture(edgeTexture, samplePos);
+                      if (sampleEdge.r > 0.5) {
+                          float dist = length(offset);
+                          if (dist < closestDist) {
+                              closestDist = dist;
+                              closestEdge = samplePos;
+                              foundEdge = true;
+                          }
+                      }
+                  }
+              }
+              
+              if (foundEdge) {
+                  // Move towards the edge
+                  vec2 toEdge = normalize(closestEdge - pos);
+                  vel = toEdge * particleSpeed * attractionStrength;
+                  tgt = closestEdge;
+              } else {
+                  // Follow the flow field
+                  vec2 flow = flowField(pos, time);
+                  vel = mix(vel, flow * particleSpeed, 0.1);  // Smooth transition
+                  tgt = vec2(-1.0);
+              }
+          }
+          
+          // Update position
+          pos += vel * deltaTime;
+          
+          // Handle boundary conditions - allow particles to flow off the canvas
+          if (pos.x < -0.1 || pos.x > 1.1 || pos.y < -0.1 || pos.y > 1.1) {
+              // Reset particle to opposite side with some randomness
+              if (abs(pos.x - 0.5) > abs(pos.y - 0.5)) {
+                  pos.x = pos.x < 0.0 ? 1.0 : 0.0;
+                  pos.y = rand(vec2(pos.y, time));
+              } else {
+                  pos.x = rand(vec2(pos.x, time));
+                  pos.y = pos.y < 0.0 ? 1.0 : 0.0;
+              }
+              vel = vec2(0.0);
+          }
+          
+          vPosition = pos;
+          vVelocity = vel;
+          vTarget = tgt;
+      }</script>
 
     <!-- Edge Detection Vertex Shader -->
     <script type="x-shader/x-vertex" id="edgeVertexShader">#version 300 es

@@ -10,6 +10,12 @@ class ParticleSystem {
       this.initShaders();
       this.initBuffers();
       this.setupEdgeDetection();
+
+      // Add time uniform location
+      this.uniforms.update.time = gl.getUniformLocation(this.updateProgram, 'time');
+
+      // Initialize time
+      this.time = 0;
   }
   
   initShaders() {
@@ -290,6 +296,9 @@ class ParticleSystem {
 
   update(deltaTime) {
     const gl = this.gl;
+
+    // Update time
+    this.time += deltaTime * 0.001;
     
     gl.useProgram(this.updateProgram);
     
@@ -300,7 +309,10 @@ class ParticleSystem {
         gl.canvas.width,
         gl.canvas.height
     );
-    
+
+    // Set time uniform
+    gl.uniform1f(this.uniforms.update.time, this.time);
+
     // Set configurable uniforms
     gl.uniform1f(this.uniforms.update.particleSpeed, CONFIG.PARTICLE_SPEED);
     gl.uniform1f(this.uniforms.update.searchRadius, CONFIG.SEARCH_RADIUS);
