@@ -1,216 +1,302 @@
 /*
 To do:
 Adjust min/max/default values of sliders
-Does search radius / attraction strength do anything? Remove if not
+Does search radius do anything? Remove if not
+Movement should take into consideration strength of edge as well? More attracted to strong edges
 Default image upon startup
 Adjusting edge threshold (and other toggles) shouldn't trigger a full restart of the animation
 Export image / video from canvas
 Pause / play button
 Add toggle for color randomness around selected hue?
-Add a persistent "push" force onto the particles -- like wind blowing across sand -- using wave movement
-- Ability to select strength / direction of movement?
+At low attraction level, the stuck particles should get displaced as well
+Randomize All does not update the GUI display properly (not synced)
 Show the original image underneath?
 Footer / about info
+Describe each variable and what it does
 Github readme
 site OG
 hotkeys
 */
 
-// Initialize WebGL
-const canvas = document.getElementById('canvas');
-const gl = canvas.getContext('webgl2');
-if (!gl) {
-    alert('WebGL 2 not supported');
-    throw new Error('WebGL 2 not supported');
-}
+// Global state and managers
+let gl, glState, resourceManager;
+let particleSystem;
+let currentImage = null;
+let animationFrameId = null;
+let isAnimating = false;
+let lastTime = 0;
+let isRestarting = false;
 
-// Enable required extensions
-const requiredExtensions = [
-    'EXT_color_buffer_float',
-    'OES_texture_float_linear'
-];
+// Configuration
+const CONFIG = {
+    particleCount: { value: 300000, min: 200000, max: 700000, step: 1000 },
+    edgeThreshold: { value: 0.5, min: 0.1, max: 3.0, step: 0.1 },
+    particleSpeed: { value: 12.0, min: 1.0, max: 60.0, step: 0.5 },
+    searchRadius: { value: 50, min: 0.1, max: 1000.0, step: 0.1 },
+    attractionStrength: { value: 5.0, min: 0.1, max: 50.0, step: 0.1 },
+    particleOpacity: { value: 0.3, min: 0.1, max: 1.0, step: 0.1 },
+    particleSize: { value: 1.0, min: 0.5, max: 2.0, step: 0.1 },
+    particleColor: '#fadcdc',
+    backgroundColor: '#2c0b0b',
+    IS_PLAYING: true
+};
 
-for (const ext of requiredExtensions) {
-    if (!gl.getExtension(ext)) {
-        alert(`Required extension ${ext} not supported`);
-        throw new Error(`Required extension ${ext} not supported`);
+async function initWebGL() {
+    const canvas = document.getElementById('canvas');
+    gl = canvas.getContext('webgl2');
+    
+    if (!gl) {
+        alert('WebGL 2 not supported');
+        throw new Error('WebGL 2 not supported');
+    }
+
+    // Enable required extensions
+    const requiredExtensions = ['EXT_color_buffer_float', 'OES_texture_float_linear'];
+    for (const ext of requiredExtensions) {
+        if (!gl.getExtension(ext)) {
+            alert(`Required extension ${ext} not supported`);
+            throw new Error(`Required extension ${ext} not supported`);
+        }
+    }
+
+    // Initialize managers
+    glState = new GLState(gl);
+    resourceManager = new ResourceManager(gl);
+
+    // Load shaders and create programs
+    try {
+        await resourceManager.createProgram(
+            'particle',
+            'particle',
+            'particle'
+        );
+
+        await resourceManager.createProgram(
+            'update',
+            'update',
+            'update',
+            ['vPosition', 'vVelocity', 'vTarget']
+        );
+
+        await resourceManager.createProgram(
+            'edge',
+            'edge',
+            'edge'
+        );
+
+        initGUI();
+        setupEventListeners();
+        updateBackgroundColor();
+
+    } catch (error) {
+        console.error('Failed to initialize WebGL:', error);
+        alert('Failed to initialize WebGL. Please check console for details.');
     }
 }
 
-// Function to resize canvas based on image dimensions
+function initGUI() {
+    const gui = new dat.GUI();
+    
+    // Add controls for each configuration value
+    Object.entries(CONFIG).forEach(([key, value]) => {
+        if (typeof value === 'object' && !Array.isArray(value)) {
+            gui.add(CONFIG[key], 'value', value.min, value.max, value.step)
+               .name(key.replace(/_/g, ' '))
+               .onChange(v => updateConfig(key, v));
+        } else if (key.includes('Color')) {
+            gui.addColor(CONFIG, key)
+               .name(key.replace(/_/g, ' '))
+               .onChange(v => updateConfig(key, v));
+        }
+    });
+
+    // Add play/pause button
+    gui.add({ togglePlayPause }, 'togglePlayPause').name('Pause/Play');
+
+    // Add randomize button
+    gui.add({ randomize: randomizeInputs }, 'randomize').name('Randomize All');
+}
+
+function setupEventListeners() {
+    // Handle image upload
+    document.getElementById('imageInput').addEventListener('change', handleImageUpload);
+    
+    // Handle restart button
+    document.getElementById('restartBtn').addEventListener('click', () => safeRestartAnimation());
+    
+    // Add keyboard shortcut for play/pause (spacebar)
+    document.addEventListener('keydown', (e) => {
+        if (e.code === 'Space' && currentImage) {
+            e.preventDefault(); // Prevent page scroll
+            togglePlayPause();
+        }
+    });
+
+    // Cleanup on page unload
+    window.addEventListener('unload', cleanup);
+}
+
+function updateConfig(key, value) {
+    // Prevent updates while restarting
+    if (isRestarting) return;
+
+    const oldValue = CONFIG[key].value;
+    
+    // Update the configuration
+    if (typeof value === 'object' && value.hasOwnProperty('value')) {
+        CONFIG[key].value = value.value;
+    } else if (key.includes('Color')) {
+        CONFIG[key] = value;
+    } else {
+        CONFIG[key] = { ...CONFIG[key], value: value };
+    }
+
+    // These parameters can be updated without restarting
+    const noRestartParams = [
+        'particleOpacity',
+        'particleSize',
+        'particleColor'
+    ];
+
+    // Handle immediate visual updates
+    if (key === 'backgroundColor') {
+        updateBackgroundColor();
+        return;
+    }
+
+    // Only restart if necessary and if we have an image
+    if (!noRestartParams.includes(key) && currentImage && oldValue !== value) {
+        safeRestartAnimation();
+    }
+}
+
 function resizeCanvasToImage(image) {
     const maxSize = Math.min(window.innerWidth, window.innerHeight) - 40;
     const scale = Math.min(maxSize / image.width, maxSize / image.height);
     
     canvas.width = Math.round(image.width * scale);
     canvas.height = Math.round(image.height * scale);
-    gl.viewport(0, 0, canvas.width, canvas.height);
+    glState.setViewport(0, 0, canvas.width, canvas.height);
 }
 
-// Configuration
-const CONFIG = {
-    PARTICLE_COUNT: 300000,
-    EDGE_THRESHOLD: 0.5,
-    PARTICLE_SPEED: 0.0040,
-    SEARCH_RADIUS: 50,
-    RANDOM_STRENGTH: 400,
-    ATTRACTION_STRENGTH: 6.0,
-    PARTICLE_OPACITY: 0.5,
-    PARTICLE_COLOR: '#fadcdc',
-    BACKGROUND_COLOR: '#2c0b0b',
-    PARTICLE_SIZE: 1.0,
-    IS_PLAYING: true // Add play/pause state
-};
-
-// Configuration ranges for randomization
-const CONFIG_RANGES = {
-    PARTICLE_COUNT: { min: 200000, max: 700000, step: 1000 },
-    EDGE_THRESHOLD: { min: 0.1, max: 3.0, step: 0.1 },
-    PARTICLE_SPEED: { min: 0.0001, max: 0.05, step: 0.0001 },
-    SEARCH_RADIUS: { min: 0.1, max: 100.0, step: 0.1 },
-    RANDOM_STRENGTH: { min: 0.0, max: 1000.0, step: 0.1 },
-    ATTRACTION_STRENGTH: { min: 0.0, max: 50.0, step: 0.1 },
-    PARTICLE_OPACITY: { min: 0.1, max: 1.0, step: 0.1 },
-    PARTICLE_SIZE: { min: 1.0, max: 1.0, step: 0.5 }
-};
-
-// Function to get a random value within a range
-function getRandomValue(min, max, step) {
-    const steps = Math.floor((max - min) / step);
-    return min + (Math.floor(Math.random() * steps) * step);
-}
-
-// Function to get a random color
-function getRandomColor() {
-    const letters = '0123456789ABCDEF';
-    let color = '#';
-    for (let i = 0; i < 6; i++) {
-        color += letters[Math.floor(Math.random() * 16)];
-    }
-    return color;
-}
-
-// Function to randomize all inputs
-function randomizeInputs() {
-    for (const [key, range] of Object.entries(CONFIG_RANGES)) {
-        CONFIG[key] = getRandomValue(range.min, range.max, range.step);
-    }
-    CONFIG.PARTICLE_COLOR = getRandomColor();
-    CONFIG.BACKGROUND_COLOR = getRandomColor();
+async function handleImageUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
     
-    // Update GUI controllers
-    for (const controller of gui.__controllers) {
-        controller.updateDisplay();
+    if (!file.type.startsWith('image/')) {
+        alert('Please upload an image file');
+        return;
     }
     
-    // Apply changes
-    updateBackgroundColor();
-    if (currentImage) {
-        restartAnimation();
-    }
-}
-
-// Function to update background color
-function updateBackgroundColor() {
-    gl.clearColor(
-        ...hexToRGB(CONFIG.BACKGROUND_COLOR),
-        1.0
-    );
-}
-
-// Function to toggle play/pause
-function togglePlayPause() {
-    CONFIG.IS_PLAYING = !CONFIG.IS_PLAYING;
-    if (CONFIG.IS_PLAYING) {
-        startAnimation();
-    } else {
+    try {
+        const img = await loadImage(file);
         stopAnimation();
+        glState.clear();
+        
+        currentImage = img;
+        resizeCanvasToImage(img);
+        
+        await safeRestartAnimation();
+        
+    } catch (error) {
+        console.error('Error processing image:', error);
+        alert('Error processing image. Please try a different image.');
     }
-    // Update button text
-    playPauseBtn.name(CONFIG.IS_PLAYING ? 'Pause' : 'Play');
 }
 
-// Initialize dat.gui
-const gui = new dat.GUI();
-gui.add(CONFIG, 'PARTICLE_COUNT', 1000, 1000000, 1000).name('Particle Count').onChange(v => updateConfig('PARTICLE_COUNT', v));
-gui.add(CONFIG, 'EDGE_THRESHOLD', 0.1, 5.0, 0.1).name('Edge Threshold').onChange(v => updateConfig('EDGE_THRESHOLD', v));
-gui.add(CONFIG, 'PARTICLE_SPEED', 0.0001, 0.1, 0.0001).name('Particle Speed').onChange(v => updateConfig('PARTICLE_SPEED', v));
-gui.add(CONFIG, 'RANDOM_STRENGTH', 0.0, 1000.0, 0.1).name('Random Strength').onChange(v => updateConfig('RANDOM_STRENGTH', v));
-gui.add(CONFIG, 'SEARCH_RADIUS', 0.1, 100.0, 0.1).name('Search Radius').onChange(v => updateConfig('SEARCH_RADIUS', v));
-gui.add(CONFIG, 'ATTRACTION_STRENGTH', 0.0, 50.0, 0.1).name('Attraction Strength').onChange(v => updateConfig('ATTRACTION_STRENGTH', v));
-gui.add(CONFIG, 'PARTICLE_OPACITY', 0.1, 1.0, 0.1).name('Particle Opacity').onChange(v => updateConfig('PARTICLE_OPACITY', v));
-gui.add(CONFIG, 'PARTICLE_SIZE', 1.0, 4.0, 0.5).name('Particle Size').onChange(v => updateConfig('PARTICLE_SIZE', v));
-gui.addColor(CONFIG, 'PARTICLE_COLOR').name('Particle Color').onFinishChange(v => updateConfig('PARTICLE_COLOR', v));
-gui.addColor(CONFIG, 'BACKGROUND_COLOR').name('Background Color').onFinishChange(v => {
-    CONFIG.BACKGROUND_COLOR = v;
+function loadImage(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = () => reject(new Error('Failed to load image'));
+            img.src = event.target.result;
+        };
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.readAsDataURL(file);
+    });
+}
+
+function updateBackgroundColor() {
+    glState.setClearColor(...WebGLUtils.hexToRGB(CONFIG.backgroundColor), 1.0);
+}
+
+function randomizeInputs() {
+    if (isRestarting) return;
+    
+    Object.entries(CONFIG).forEach(([key, value]) => {
+        if (typeof value === 'object' && !Array.isArray(value)) {
+            CONFIG[key].value = WebGLUtils.getRandomValue(value.min, value.max, value.step);
+        } else if (key.includes('Color')) {
+            CONFIG[key] = WebGLUtils.getRandomColor();
+        }
+    });
+    
     updateBackgroundColor();
-});
-
-// Add play/pause button
-const playPauseBtn = gui.add({ togglePlayPause }, 'togglePlayPause').name('Pause');
-
-// Add randomize button
-const randomizeBtn = { randomize: randomizeInputs };
-gui.add(randomizeBtn, 'randomize').name('Randomize All');
-
-// Helper function to convert hex to RGB
-function hexToRGB(hex) {
-    const r = parseInt(hex.slice(1, 3), 16) / 255;
-    const g = parseInt(hex.slice(3, 5), 16) / 255;
-    const b = parseInt(hex.slice(5, 7), 16) / 255;
-    return [r, g, b];
-}
-
-// Create particle system
-let particleSystem;
-let currentImage = null;
-try {
-    particleSystem = new ParticleSystem(gl, CONFIG.PARTICLE_COUNT);
-} catch (error) {
-    console.error('Failed to create particle system:', error);
-    alert('Failed to initialize WebGL particle system');
-    throw error;
-}
-
-// Handle configuration changes
-function updateConfig(key, value) {
-    CONFIG[key] = value;
     if (currentImage) {
-        restartAnimation();
+        safeRestartAnimation();
     }
 }
 
-// Animation state
-let lastTime = 0;
-let animationFrameId = null;
-let isAnimating = false;
-
-function clearCanvas() {
-    gl.clear(gl.COLOR_BUFFER_BIT);
-}
-
-// Initialize background color
-updateBackgroundColor();
-
-function animate(currentTime) {
-    const deltaTime = lastTime ? currentTime - lastTime : 0;
-    lastTime = currentTime;
+function safeRestartAnimation() {
+    if (!currentImage || isRestarting) return;
     
-    clearCanvas();
-    
-    particleSystem.update(deltaTime);
-    particleSystem.render();
-    
-    if (isAnimating && CONFIG.IS_PLAYING) {
-        animationFrameId = requestAnimationFrame(animate);
-    }
+    return new Promise((resolve, reject) => {
+        isRestarting = true;
+        
+        // Stop current animation
+        stopAnimation();
+        
+        // Clean up existing particle system
+        if (particleSystem) {
+            try {
+                particleSystem.dispose();
+            } catch (error) {
+                console.error('Error disposing particle system:', error);
+            }
+            particleSystem = null;
+        }
+        
+        glState.clear();
+        
+        // Small delay to ensure cleanup is complete
+        setTimeout(() => {
+            try {
+                // Create new particle system
+                particleSystem = new ParticleSystem(gl, CONFIG.particleCount.value);
+                particleSystem.processImage(currentImage);
+                
+                // Reset state and restart
+                CONFIG.IS_PLAYING = true;
+                isRestarting = false;
+                startAnimation();
+                resolve();
+            } catch (error) {
+                console.error('Error during restart:', error);
+                isRestarting = false;
+                reject(error);
+                
+                // Attempt to recover
+                try {
+                    glState.clear();
+                    particleSystem = new ParticleSystem(gl, CONFIG.particleCount.value);
+                    particleSystem.processImage(currentImage);
+                    startAnimation();
+                } catch (recoveryError) {
+                    console.error('Failed to recover from restart error:', recoveryError);
+                    alert('An error occurred. Please refresh the page.');
+                }
+            }
+        }, 50); // Small delay for cleanup
+    });
 }
 
 function startAnimation() {
-    if (!isAnimating) {
+    if (!isAnimating && !isRestarting && particleSystem) {
         isAnimating = true;
         lastTime = 0;
-        animate(0);
+        animationFrameId = requestAnimationFrame(animate);
     }
 }
 
@@ -222,69 +308,55 @@ function stopAnimation() {
     }
 }
 
-function restartAnimation() {
-    if (currentImage) {
+function animate(currentTime) {
+    if (!particleSystem || isRestarting) {
+        isAnimating = false;
+        return;
+    }
+
+    const deltaTime = lastTime ? currentTime - lastTime : 0;
+    lastTime = currentTime;
+    
+    try {
+        glState.clear();
+        particleSystem.update(deltaTime);
+        particleSystem.render();
+        
+        if (isAnimating && CONFIG.IS_PLAYING) {
+            animationFrameId = requestAnimationFrame(animate);
+        }
+    } catch (error) {
+        console.error('Animation error:', error);
         stopAnimation();
-        clearCanvas();
-        particleSystem = new ParticleSystem(gl, CONFIG.PARTICLE_COUNT);
-        particleSystem.processImage(currentImage);
-        startAnimation();
+        safeRestartAnimation();
     }
 }
 
-// Handle image upload
-document.getElementById('imageInput').addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+function togglePlayPause() {
+    if (isRestarting) return;
     
-    if (!file.type.startsWith('image/')) {
-        alert('Please upload an image file');
-        return;
+    CONFIG.IS_PLAYING = !CONFIG.IS_PLAYING;
+    if (CONFIG.IS_PLAYING) {
+        startAnimation();
+    } else {
+        stopAnimation();
     }
-    
-    const reader = new FileReader();
-    reader.onload = (event) => {
-        const img = new Image();
-        img.onload = () => {
-            stopAnimation();
-            clearCanvas();
-            
-            try {
-                currentImage = img;
-                resizeCanvasToImage(img);
-                particleSystem = new ParticleSystem(gl, CONFIG.PARTICLE_COUNT);
-                particleSystem.processImage(currentImage);
-                CONFIG.IS_PLAYING = true; // Reset to playing state when new image is loaded
-                playPauseBtn.name('Pause'); // Update button text
-                startAnimation();
-            } catch (error) {
-                console.error('Error processing image:', error);
-                alert('Error processing image. Please try a different image.');
-            }
-        };
-        img.onerror = () => {
-            alert('Error loading image. Please try a different image.');
-        };
-        img.src = event.target.result;
-    };
-    reader.onerror = () => {
-        alert('Error reading file. Please try again.');
-    };
-    reader.readAsDataURL(file);
-});
+}
 
-// Handle restart button
-document.getElementById('restartBtn').addEventListener('click', restartAnimation);
-
-// Add keyboard shortcut for play/pause (spacebar)
-document.addEventListener('keydown', (e) => {
-    if (e.code === 'Space' && currentImage) {
-        e.preventDefault(); // Prevent page scroll
-        togglePlayPause();
-    }
-});
-
-// Cleanup on page unload
-window.addEventListener('unload', () => {
+function cleanup() {
     stopAnimation();
-});
+    if (particleSystem) {
+        try {
+            particleSystem.dispose();
+            particleSystem = null;
+        } catch (error) {
+            console.error('Error during cleanup:', error);
+        }
+    }
+    if (resourceManager) {
+        resourceManager.dispose();
+    }
+}
+
+// Initialize the application
+window.addEventListener('load', initWebGL);
