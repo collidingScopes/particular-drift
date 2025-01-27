@@ -1,6 +1,5 @@
 /*
 To do:
-dat.gui inputs
 function to randomize inputs
 Adjust min/max/default values of sliders
 Toggle for background color
@@ -9,7 +8,6 @@ Default image upon startup
 Adjusting edge threshold (and other toggles) shouldn't trigger a full restart of the animation
 Export image / video from canvas
 Pause / play button
-color toggle should only fire refresh upon finishChange (too much lag otherwise)
 Add toggle for color randomness around selected hue?
 Add a persistent "push" force onto the particles -- like wind blowing across sand -- using wave movement
 - Ability to select strength / direction of movement?
@@ -41,7 +39,7 @@ for (const ext of requiredExtensions) {
     }
 }
 
-// Function to resize canvas based on image dimensions while maintaining max size constraints
+// Function to resize canvas based on image dimensions
 function resizeCanvasToImage(image) {
     const maxSize = Math.min(window.innerWidth, window.innerHeight) - 40;
     const scale = Math.min(maxSize / image.width, maxSize / image.height);
@@ -54,55 +52,25 @@ function resizeCanvasToImage(image) {
 // Configuration
 const CONFIG = {
   PARTICLE_COUNT: 300000,
-  EDGE_THRESHOLD: 2,
-  PARTICLE_SPEED: 0.0030,
-  SEARCH_RADIUS: 2,
-  RANDOM_STRENGTH: 600,
-  ATTRACTION_STRENGTH: 1.0,
+  EDGE_THRESHOLD: 0.5,
+  PARTICLE_SPEED: 0.0040,
+  SEARCH_RADIUS: 50,
+  RANDOM_STRENGTH: 400,
+  ATTRACTION_STRENGTH: 6.0,
   PARTICLE_OPACITY: 0.5,
   PARTICLE_COLOR: '#fadcdc',
 };
 
-// Initialize sliders with default values
-document.getElementById('particleCount').value = CONFIG.PARTICLE_COUNT;
-document.getElementById('edgeThreshold').value = CONFIG.EDGE_THRESHOLD;
-document.getElementById('particleSpeed').value = CONFIG.PARTICLE_SPEED;
-document.getElementById('searchRadius').value = CONFIG.SEARCH_RADIUS;
-document.getElementById('randomStrength').value = CONFIG.RANDOM_STRENGTH;
-document.getElementById('attractionStrength').value = CONFIG.ATTRACTION_STRENGTH;
-
-// Update value displays
-document.getElementById('particleCountValue').textContent = CONFIG.PARTICLE_COUNT;
-document.getElementById('edgeThresholdValue').textContent = CONFIG.EDGE_THRESHOLD;
-document.getElementById('particleSpeedValue').textContent = CONFIG.PARTICLE_SPEED;
-document.getElementById('searchRadiusValue').textContent = CONFIG.SEARCH_RADIUS;
-document.getElementById('randomStrengthValue').textContent = CONFIG.RANDOM_STRENGTH;
-document.getElementById('attractionStrengthValue').textContent = CONFIG.ATTRACTION_STRENGTH;
-
-// Add event listeners for new sliders
-document.getElementById('randomStrength').addEventListener('input', (e) => {
-  const value = parseFloat(e.target.value);
-  document.getElementById('randomStrengthValue').textContent = value;
-  updateConfig('RANDOM_STRENGTH', value);
-});
-
-document.getElementById('attractionStrength').addEventListener('input', (e) => {
-  const value = parseFloat(e.target.value);
-  document.getElementById('attractionStrengthValue').textContent = value;
-  updateConfig('ATTRACTION_STRENGTH', value);
-});
-
-// Add event listeners after existing ones
-document.getElementById('particleOpacity').addEventListener('input', (e) => {
-  const value = parseFloat(e.target.value);
-  document.getElementById('particleOpacityValue').textContent = value;
-  updateConfig('PARTICLE_OPACITY', value);
-});
-
-document.getElementById('particleColor').addEventListener('input', (e) => {
-  const value = e.target.value;
-  updateConfig('PARTICLE_COLOR', value);
-});
+// Initialize dat.gui
+const gui = new dat.GUI();
+gui.add(CONFIG, 'PARTICLE_COUNT', 1000, 1000000, 1000).name('Particle Count').onChange(v => updateConfig('PARTICLE_COUNT', v));
+gui.add(CONFIG, 'EDGE_THRESHOLD', 0.1, 5.0, 0.1).name('Edge Threshold').onChange(v => updateConfig('EDGE_THRESHOLD', v));
+gui.add(CONFIG, 'PARTICLE_SPEED', 0.0001, 0.1, 0.0001).name('Particle Speed').onChange(v => updateConfig('PARTICLE_SPEED', v));
+gui.add(CONFIG, 'SEARCH_RADIUS', 0.1, 100.0, 0.1).name('Search Radius').onChange(v => updateConfig('SEARCH_RADIUS', v));
+gui.add(CONFIG, 'RANDOM_STRENGTH', 0.0, 1000.0, 0.1).name('Random Strength').onChange(v => updateConfig('RANDOM_STRENGTH', v));
+gui.add(CONFIG, 'ATTRACTION_STRENGTH', 0.0, 50.0, 0.1).name('Attraction Strength').onChange(v => updateConfig('ATTRACTION_STRENGTH', v));
+gui.add(CONFIG, 'PARTICLE_OPACITY', 0.1, 1.0, 0.1).name('Particle Opacity').onChange(v => updateConfig('PARTICLE_OPACITY', v));
+gui.addColor(CONFIG, 'PARTICLE_COLOR').name('Particle Color').onFinishChange(v => updateConfig('PARTICLE_COLOR', v));
 
 // Create particle system
 let particleSystem;
@@ -115,37 +83,13 @@ try {
     throw error;
 }
 
-// Handle slider changes
+// Handle configuration changes
 function updateConfig(key, value) {
     CONFIG[key] = value;
     if (currentImage) {
         restartAnimation();
     }
 }
-
-document.getElementById('particleCount').addEventListener('input', (e) => {
-    const value = parseInt(e.target.value);
-    document.getElementById('particleCountValue').textContent = value;
-    updateConfig('PARTICLE_COUNT', value);
-});
-
-document.getElementById('edgeThreshold').addEventListener('input', (e) => {
-    const value = parseFloat(e.target.value);
-    document.getElementById('edgeThresholdValue').textContent = value;
-    updateConfig('EDGE_THRESHOLD', value);
-});
-
-document.getElementById('particleSpeed').addEventListener('input', (e) => {
-    const value = parseFloat(e.target.value);
-    document.getElementById('particleSpeedValue').textContent = value;
-    updateConfig('PARTICLE_SPEED', value);
-});
-
-document.getElementById('searchRadius').addEventListener('input', (e) => {
-    const value = parseFloat(e.target.value);
-    document.getElementById('searchRadiusValue').textContent = value;
-    updateConfig('SEARCH_RADIUS', value);
-});
 
 // Animation state
 let lastTime = 0;
@@ -215,9 +159,7 @@ document.getElementById('imageInput').addEventListener('change', (e) => {
             clearCanvas();
             
             try {
-                // Store current image for restart functionality
                 currentImage = img;
-                // Resize canvas to match image dimensions
                 resizeCanvasToImage(img);
                 particleSystem = new ParticleSystem(gl, CONFIG.PARTICLE_COUNT);
                 particleSystem.processImage(currentImage);
