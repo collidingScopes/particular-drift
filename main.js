@@ -4,12 +4,9 @@ Adjust min/max/default values of sliders
 Does search radius do anything? Remove if not
 Movement should take into consideration strength of edge as well? More attracted to strong edges
 Default image upon startup
-Adjusting edge threshold (and other toggles) shouldn't trigger a full restart of the animation
 Export image / video from canvas
-Pause / play button
 Add toggle for color randomness around selected hue?
 At low attraction level, the stuck particles should get displaced as well
-Randomize All does not update the GUI display properly (not synced)
 Show the original image underneath?
 Footer / about info
 Describe each variable and what it does
@@ -222,14 +219,50 @@ function updateBackgroundColor() {
     glState.setClearColor(...WebGLUtils.hexToRGB(CONFIG.backgroundColor), 1.0);
 }
 
+function initGUI() {
+    window.gui = new dat.GUI();
+    
+    // Store controllers for later access
+    window.guiControllers = {};
+    
+    // Add controls for each configuration value
+    Object.entries(CONFIG).forEach(([key, value]) => {
+        if (typeof value === 'object' && !Array.isArray(value)) {
+            window.guiControllers[key] = gui.add(CONFIG[key], 'value', value.min, value.max, value.step)
+               .name(key.replace(/_/g, ' '))
+               .onChange(v => updateConfig(key, v));
+        } else if (key.includes('Color')) {
+            window.guiControllers[key] = gui.addColor(CONFIG, key)
+               .name(key.replace(/_/g, ' '))
+               .onChange(v => updateConfig(key, v));
+        }
+    });
+
+    // Add play/pause button
+    gui.add({ togglePlayPause }, 'togglePlayPause').name('Pause/Play');
+
+    // Add randomize button
+    gui.add({ randomize: randomizeInputs }, 'randomize').name('Randomize All');
+}
+
 function randomizeInputs() {
     if (isRestarting) return;
     
     Object.entries(CONFIG).forEach(([key, value]) => {
         if (typeof value === 'object' && !Array.isArray(value)) {
-            CONFIG[key].value = WebGLUtils.getRandomValue(value.min, value.max, value.step);
+            const newValue = WebGLUtils.getRandomValue(value.min, value.max, value.step);
+            CONFIG[key].value = newValue;
+            // Update the GUI controller
+            if (window.guiControllers[key]) {
+                window.guiControllers[key].setValue(newValue);
+            }
         } else if (key.includes('Color')) {
-            CONFIG[key] = WebGLUtils.getRandomColor();
+            const newColor = WebGLUtils.getRandomColor();
+            CONFIG[key] = newColor;
+            // Update the GUI controller
+            if (window.guiControllers[key]) {
+                window.guiControllers[key].setValue(newColor);
+            }
         }
     });
     
