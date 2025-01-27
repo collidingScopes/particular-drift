@@ -86,11 +86,12 @@ class ParticleSystem {
           edge: {
               resolution: gl.getUniformLocation(this.edgeProgram, 'uResolution'),
               image: gl.getUniformLocation(this.edgeProgram, 'uImage'),
-              threshold: gl.getUniformLocation(this.edgeProgram, 'threshold')
+              threshold: gl.getUniformLocation(this.edgeProgram, 'threshold'),
           },
           render: {
               particleColor: gl.getUniformLocation(this.renderProgram, 'uParticleColor'),
-              particleOpacity: gl.getUniformLocation(this.renderProgram, 'uParticleOpacity')
+              particleOpacity: gl.getUniformLocation(this.renderProgram, 'uParticleOpacity'),
+              particleSize: gl.getUniformLocation(this.renderProgram, 'particleSize'),
           }
       };
 
@@ -368,7 +369,8 @@ render() {
     const rgb = this.hexToRGB(CONFIG.PARTICLE_COLOR);
     gl.uniform3f(this.uniforms.render.particleColor, rgb[0], rgb[1], rgb[2]);
     gl.uniform1f(this.uniforms.render.particleOpacity, CONFIG.PARTICLE_OPACITY);
-    
+    gl.uniform1f(this.uniforms.render.particleSize, CONFIG.PARTICLE_SIZE);
+
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     

@@ -1,8 +1,6 @@
 /*
 To do:
-function to randomize inputs
 Adjust min/max/default values of sliders
-Toggle for background color
 Does search radius / attraction strength do anything? Remove if not
 Default image upon startup
 Adjusting edge threshold (and other toggles) shouldn't trigger a full restart of the animation
@@ -51,15 +49,86 @@ function resizeCanvasToImage(image) {
 
 // Configuration
 const CONFIG = {
-  PARTICLE_COUNT: 300000,
-  EDGE_THRESHOLD: 0.5,
-  PARTICLE_SPEED: 0.0040,
-  SEARCH_RADIUS: 50,
-  RANDOM_STRENGTH: 400,
-  ATTRACTION_STRENGTH: 6.0,
-  PARTICLE_OPACITY: 0.5,
-  PARTICLE_COLOR: '#fadcdc',
+    PARTICLE_COUNT: 300000,
+    EDGE_THRESHOLD: 0.5,
+    PARTICLE_SPEED: 0.0040,
+    SEARCH_RADIUS: 50,
+    RANDOM_STRENGTH: 400,
+    ATTRACTION_STRENGTH: 6.0,
+    PARTICLE_OPACITY: 0.5,
+    PARTICLE_COLOR: '#fadcdc',
+    PARTICLE_SIZE: 1.0,
+    BACKGROUND_COLOR: '#000000',
+    IS_PLAYING: true // Add play/pause state
 };
+
+// Configuration ranges for randomization
+const CONFIG_RANGES = {
+    PARTICLE_COUNT: { min: 200000, max: 700000, step: 1000 },
+    EDGE_THRESHOLD: { min: 0.1, max: 3.0, step: 0.1 },
+    PARTICLE_SPEED: { min: 0.0001, max: 0.05, step: 0.0001 },
+    SEARCH_RADIUS: { min: 0.1, max: 100.0, step: 0.1 },
+    RANDOM_STRENGTH: { min: 0.0, max: 1000.0, step: 0.1 },
+    ATTRACTION_STRENGTH: { min: 0.0, max: 50.0, step: 0.1 },
+    PARTICLE_OPACITY: { min: 0.1, max: 1.0, step: 0.1 },
+    PARTICLE_SIZE: { min: 1.0, max: 1.0, step: 0.5 }
+};
+
+// Function to get a random value within a range
+function getRandomValue(min, max, step) {
+    const steps = Math.floor((max - min) / step);
+    return min + (Math.floor(Math.random() * steps) * step);
+}
+
+// Function to get a random color
+function getRandomColor() {
+    const letters = '0123456789ABCDEF';
+    let color = '#';
+    for (let i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+    }
+    return color;
+}
+
+// Function to randomize all inputs
+function randomizeInputs() {
+    for (const [key, range] of Object.entries(CONFIG_RANGES)) {
+        CONFIG[key] = getRandomValue(range.min, range.max, range.step);
+    }
+    CONFIG.PARTICLE_COLOR = getRandomColor();
+    CONFIG.BACKGROUND_COLOR = getRandomColor();
+    
+    // Update GUI controllers
+    for (const controller of gui.__controllers) {
+        controller.updateDisplay();
+    }
+    
+    // Apply changes
+    updateBackgroundColor();
+    if (currentImage) {
+        restartAnimation();
+    }
+}
+
+// Function to update background color
+function updateBackgroundColor() {
+    gl.clearColor(
+        ...hexToRGB(CONFIG.BACKGROUND_COLOR),
+        1.0
+    );
+}
+
+// Function to toggle play/pause
+function togglePlayPause() {
+    CONFIG.IS_PLAYING = !CONFIG.IS_PLAYING;
+    if (CONFIG.IS_PLAYING) {
+        startAnimation();
+    } else {
+        stopAnimation();
+    }
+    // Update button text
+    playPauseBtn.name(CONFIG.IS_PLAYING ? 'Pause' : 'Play');
+}
 
 // Initialize dat.gui
 const gui = new dat.GUI();
@@ -70,7 +139,27 @@ gui.add(CONFIG, 'SEARCH_RADIUS', 0.1, 100.0, 0.1).name('Search Radius').onChange
 gui.add(CONFIG, 'RANDOM_STRENGTH', 0.0, 1000.0, 0.1).name('Random Strength').onChange(v => updateConfig('RANDOM_STRENGTH', v));
 gui.add(CONFIG, 'ATTRACTION_STRENGTH', 0.0, 50.0, 0.1).name('Attraction Strength').onChange(v => updateConfig('ATTRACTION_STRENGTH', v));
 gui.add(CONFIG, 'PARTICLE_OPACITY', 0.1, 1.0, 0.1).name('Particle Opacity').onChange(v => updateConfig('PARTICLE_OPACITY', v));
-gui.addColor(CONFIG, 'PARTICLE_COLOR').name('Particle Color').onFinishChange(v => updateConfig('PARTICLE_COLOR', v));
+gui.add(CONFIG, 'PARTICLE_SIZE', 1.0, 10.0, 0.5).name('Particle Size').onChange(v => updateConfig('PARTICLE_SIZE', v));
+gui.addColor(CONFIG, 'PARTICLE_COLOR').name('Particle Color').onChange(v => updateConfig('PARTICLE_COLOR', v));
+gui.addColor(CONFIG, 'BACKGROUND_COLOR').name('Background Color').onChange(v => {
+    CONFIG.BACKGROUND_COLOR = v;
+    updateBackgroundColor();
+});
+
+// Add play/pause button
+const playPauseBtn = gui.add({ togglePlayPause }, 'togglePlayPause').name('Pause');
+
+// Add randomize button
+const randomizeBtn = { randomize: randomizeInputs };
+gui.add(randomizeBtn, 'randomize').name('Randomize All');
+
+// Helper function to convert hex to RGB
+function hexToRGB(hex) {
+    const r = parseInt(hex.slice(1, 3), 16) / 255;
+    const g = parseInt(hex.slice(3, 5), 16) / 255;
+    const b = parseInt(hex.slice(5, 7), 16) / 255;
+    return [r, g, b];
+}
 
 // Create particle system
 let particleSystem;
@@ -97,9 +186,11 @@ let animationFrameId = null;
 let isAnimating = false;
 
 function clearCanvas() {
-    gl.clearColor(0, 0, 0, 1);
     gl.clear(gl.COLOR_BUFFER_BIT);
 }
+
+// Initialize background color
+updateBackgroundColor();
 
 function animate(currentTime) {
     const deltaTime = lastTime ? currentTime - lastTime : 0;
@@ -110,7 +201,7 @@ function animate(currentTime) {
     particleSystem.update(deltaTime);
     particleSystem.render();
     
-    if (isAnimating) {
+    if (isAnimating && CONFIG.IS_PLAYING) {
         animationFrameId = requestAnimationFrame(animate);
     }
 }
@@ -163,6 +254,8 @@ document.getElementById('imageInput').addEventListener('change', (e) => {
                 resizeCanvasToImage(img);
                 particleSystem = new ParticleSystem(gl, CONFIG.PARTICLE_COUNT);
                 particleSystem.processImage(currentImage);
+                CONFIG.IS_PLAYING = true; // Reset to playing state when new image is loaded
+                playPauseBtn.name('Pause'); // Update button text
                 startAnimation();
             } catch (error) {
                 console.error('Error processing image:', error);
@@ -182,6 +275,14 @@ document.getElementById('imageInput').addEventListener('change', (e) => {
 
 // Handle restart button
 document.getElementById('restartBtn').addEventListener('click', restartAnimation);
+
+// Add keyboard shortcut for play/pause (spacebar)
+document.addEventListener('keydown', (e) => {
+    if (e.code === 'Space' && currentImage) {
+        e.preventDefault(); // Prevent page scroll
+        togglePlayPause();
+    }
+});
 
 // Cleanup on page unload
 window.addEventListener('unload', () => {
