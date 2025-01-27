@@ -31,7 +31,6 @@ class ParticleSystem {
               resolution: gl.getUniformLocation(this.updateProgram, 'resolution'),
               edgeTexture: gl.getUniformLocation(this.updateProgram, 'edgeTexture'),
               particleSpeed: gl.getUniformLocation(this.updateProgram, 'particleSpeed'),
-              searchRadius: gl.getUniformLocation(this.updateProgram, 'searchRadius'),
               attractionStrength: gl.getUniformLocation(this.updateProgram, 'attractionStrength'),
               time: gl.getUniformLocation(this.updateProgram, 'time')
           },
@@ -228,7 +227,6 @@ class ParticleSystem {
       );
       gl.uniform1f(this.uniforms.update.time, this.time);
       gl.uniform1f(this.uniforms.update.particleSpeed, CONFIG.particleSpeed.value);
-      gl.uniform1f(this.uniforms.update.searchRadius, CONFIG.searchRadius.value);
       gl.uniform1f(this.uniforms.update.attractionStrength, CONFIG.attractionStrength.value);
 
       // Set up transform feedback

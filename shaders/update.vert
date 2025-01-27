@@ -32,17 +32,38 @@ void main() {
     vec2 tgt = target;
     
     vec4 edge = texture(edgeTexture, pos);
+    vec2 flow = flowField(pos, time) * particleSpeed * 0.001 * 2.0;
     
-    if (edge.r > 0.5) {
-        vel *= 0.95;
-        tgt = vec2(-1.0);
+    // Only very strong edges can hold particles
+    if (edge.r > 0.4) {
+        float edgeStrength = smoothstep(0.85, 1.0, edge.r);
+        // Need much higher attraction to maintain stickiness
+        float baseStickiness = smoothstep(15.0, 40.0, attractionStrength);
+        
+        // Even strong edges have reduced stickiness
+        float stickiness = mix(baseStickiness * 1.0, 0.9, edgeStrength * edgeStrength);
+        
+        // Much more likely to become unstuck
+        if (stickiness < 0.7 || edgeStrength < 0.9 || rand(pos + time * 0.008) > stickiness) {
+            // Stronger flow influence when becoming unstuck
+            vel = mix(flow * 1.2, vel * 0.9, stickiness);
+            tgt = vec2(-1.0);
+        } else {
+            // Even stuck particles have significant movement
+            float dampening = mix(0.6, 0.9, edgeStrength);
+            vel *= mix(dampening, 0.85, stickiness);
+            // Strong flow influence even when stuck
+            vel += flow * (1.0 - stickiness * 0.7) * (1.0 - edgeStrength);
+            tgt = pos;
+        }
     } else {
         float closestDist = searchRadius;
         vec2 closestEdge = pos;
         bool foundEdge = false;
         
-        for (float y = -5.0; y <= 5.0; y += 1.0) {
-            for (float x = -5.0; x <= 5.0; x += 1.0) {
+        // Reduced search radius
+        for (float y = -2.0; y <= 2.0; y += 1.0) {
+            for (float x = -2.0; x <= 2.0; x += 1.0) {
                 vec2 offset = vec2(x, y) / resolution;
                 vec2 samplePos = pos + offset;
                 
@@ -50,7 +71,7 @@ void main() {
                     samplePos.y < 0.0 || samplePos.y > 1.0) continue;
                 
                 vec4 sampleEdge = texture(edgeTexture, samplePos);
-                if (sampleEdge.r > 0.5) {
+                if (sampleEdge.r > 0.85) {
                     float dist = length(offset);
                     if (dist < closestDist) {
                         closestDist = dist;
@@ -61,24 +82,20 @@ void main() {
             }
         }
         
-        // Calculate flow field velocity
-        vec2 flow = flowField(pos, time) * particleSpeed*0.001 * 2.0;
-        
         if (foundEdge) {
-            // For particles near edges, blend between flow and edge attraction
+            // Much weaker edge attraction
             vec2 toEdge = normalize(closestEdge - pos);
-            vec2 edgeForce = toEdge * particleSpeed*0.001;
-            float edgeInfluence = clamp(attractionStrength * 0.1, 0.0, 1.0);
-            vel = mix(flow, edgeForce, edgeInfluence);
+            vec2 edgeForce = toEdge * particleSpeed * 0.0003;
+            float edgeInfluence = smoothstep(10.0, 35.0, attractionStrength) * 0.4;
+            vel = mix(flow * 1.2, edgeForce, edgeInfluence);
             tgt = closestEdge;
         } else {
-            // For particles not near edges, use full flow field movement
             vel = flow;
             tgt = vec2(-1.0);
         }
         
-        // Add a small amount of the current velocity for momentum
-        vel = mix(vel, velocity, 0.1);
+        // Increased momentum
+        vel = mix(vel, velocity, 0.3);
     }
     
     pos += vel * deltaTime;

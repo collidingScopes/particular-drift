@@ -1,12 +1,13 @@
 /*
 To do:
 Adjust min/max/default values of sliders
-Does search radius do anything? Remove if not
-Movement should take into consideration strength of edge as well? More attracted to strong edges
+Creation / destruction should ebb and flow more (one part of the image creating / one part destroying at all times)
+Animation does not always restart upon change to dat.GUI (is it because of set timeout?)
+Randomize all inputs should select from hardcoded color palettes instead?
+Bound the random input ranges more so that the output is still "nice on average"
 Default image upon startup
 Export image / video from canvas
 Add toggle for color randomness around selected hue?
-At low attraction level, the stuck particles should get displaced as well
 Show the original image underneath?
 Footer / about info
 Describe each variable and what it does
@@ -29,8 +30,7 @@ const CONFIG = {
     particleCount: { value: 300000, min: 200000, max: 700000, step: 1000 },
     edgeThreshold: { value: 0.5, min: 0.1, max: 3.0, step: 0.1 },
     particleSpeed: { value: 12.0, min: 1.0, max: 60.0, step: 0.5 },
-    searchRadius: { value: 50, min: 0.1, max: 1000.0, step: 0.1 },
-    attractionStrength: { value: 5.0, min: 0.1, max: 50.0, step: 0.1 },
+    attractionStrength: { value: 10.0, min: 0.1, max: 100.0, step: 0.1 },
     particleOpacity: { value: 0.3, min: 0.1, max: 1.0, step: 0.1 },
     particleSize: { value: 1.0, min: 0.5, max: 2.0, step: 0.1 },
     particleColor: '#fadcdc',
