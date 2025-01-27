@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edge Detection Particle Animation</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="controls">
+        <div class="input-group">
+            <input type="file" id="imageInput" accept="image/*">
+            <button id="restartBtn">Restart Animation</button>
+            <div id="info">Upload an image to begin</div>
+        </div>
+        
+        <div class="sliders">
+          <div class="slider-group">
+              <label>Particle Count: <span id="particleCountValue">50000</span></label>
+              <input type="range" id="particleCount" min="1000" max="1000000" step="1000" value="300000">
+          </div>
+          
+          <div class="slider-group">
+              <label>Edge Threshold: <span id="edgeThresholdValue">0.5</span></label>
+              <input type="range" id="edgeThreshold" min="0.1" max="5.0" step="0.1" value="0.5">
+          </div>
+          
+          <div class="slider-group">
+              <label>Particle Speed: <span id="particleSpeedValue"></span></label>
+              <input type="range" id="particleSpeed" min="0.0001" max="0.1" step="0.0001" value="0.0020">
+          </div>
+          
+          <div class="slider-group">
+              <label>Search Radius: <span id="searchRadiusValue">0.5</span></label>
+              <input type="range" id="searchRadius" min="0.1" max="10 .0" step="0.1" value="0.5">
+          </div>
+      
+          <div class="slider-group">
+              <label>Random Strength: <span id="randomStrengthValue">0.5</span></label>
+              <input type="range" id="randomStrength" min="0.0" max="1000.0" step="0.1" value="0.5">
+          </div>
+      
+          <div class="slider-group">
+              <label>Edge Attraction: <span id="attractionStrengthValue">0.5</span></label>
+              <input type="range" id="attractionStrength" min="0.0" max="10.0" step="0.1" value="1.0">
+          </div>
+
+          <div class="slider-group">
+            <label>Particle Opacity: <span id="particleOpacityValue">0.5</span></label>
+            <input type="range" id="particleOpacity" min="0.1" max="1.0" step="0.1" value="0.5">
+          </div>
+          
+          <div class="slider-group">
+              <label>Particle Color: <input type="color" id="particleColor" value="#fadcdc"></label>
+          </div>
+
+        </div>
+    </div>
+    <canvas id="canvas"></canvas>
+
+    <!-- Render Vertex Shader -->
+    <script type="x-shader/x-vertex" id="particleVertexShader">#version 300 es
+in vec2 position;
+in vec2 velocity;
+in vec2 target;
+
+out vec2 vPosition;
+out vec2 vVelocity;
+out vec2 vTarget;
+
+void main() {
+    vPosition = position;
+    vVelocity = velocity;
+    vTarget = target;
+    gl_Position = vec4(position * 2.0 - 1.0, 0, 1);
+    gl_PointSize = 2.0;
+}</script>
+
+    <!-- Render Fragment Shader -->
+    <script type="x-shader/x-fragment" id="particleFragmentShader">#version 300 es
+      precision highp float;
+      
+      uniform vec3 uParticleColor;
+      uniform float uParticleOpacity;
+      
+      out vec4 fragColor;
+      
+      void main() {
+          float dist = length(gl_PointCoord - vec2(0.5));
+          if (dist > 0.5) discard;
+          fragColor = vec4(uParticleColor, uParticleOpacity);
+      }</script>
+
+<!-- Update Vertex Shader -->
+<script type="x-shader/x-vertex" id="updateVertexShader">#version 300 es
+  in vec2 position;
+  in vec2 velocity;
+  in vec2 target;
+  
+  out vec2 vPosition;
+  out vec2 vVelocity;
+  out vec2 vTarget;
+  
+  uniform sampler2D edgeTexture;
+  uniform float deltaTime;
+  uniform vec2 resolution;
+  uniform float particleSpeed;
+  uniform float searchRadius;
+  uniform float randomSpeed;
+  uniform float randomStrength;
+  uniform float attractionStrength;
+  
+  float rand(vec2 co) {
+      return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
+  }
+  
+  void main() {
+      vec2 pos = position;
+      vec2 vel = velocity;
+      vec2 tgt = target;
+      
+      vec4 edge = texture(edgeTexture, pos);
+      
+      if (edge.r > 0.5) {
+          // Random movement when on edge, scaled by random strength
+          vel = vec2(
+              (rand(pos.xy) - 0.5) * randomSpeed * 0.1 * randomStrength,
+              (rand(pos.yx) - 0.5) * randomSpeed * 0.1 * randomStrength
+          );
+          tgt = vec2(-1.0);
+      } else if (tgt.x < 0.0) {
+          float closestDist = searchRadius;
+          vec2 closestEdge = pos;
+          bool foundEdge = false;
+          
+          for (float y = -5.0; y <= 5.0; y += 1.0) {
+              for (float x = -5.0; x <= 5.0; x += 1.0) {
+                  vec2 offset = vec2(x, y) / resolution;
+                  vec2 samplePos = pos + offset;
+                  if (samplePos.x < 0.0 || samplePos.x > 1.0 || 
+                      samplePos.y < 0.0 || samplePos.y > 1.0) continue;
+                  
+                  vec4 sampleEdge = texture(edgeTexture, samplePos);
+                  if (sampleEdge.r > 0.5) {
+                      float dist = length(offset);
+                      if (dist < closestDist) {
+                          closestDist = dist;
+                          closestEdge = samplePos;
+                          foundEdge = true;
+                      }
+                  }
+              }
+          }
+          
+          if (foundEdge) {
+              tgt = closestEdge;
+              // Combine directed and random movement, scaled by their respective strengths
+              vec2 directedVel = normalize(closestEdge - pos) * particleSpeed * attractionStrength;
+              vec2 randomVel = vec2(rand(pos.xy) - 0.5, rand(pos.yx) - 0.5) * randomSpeed * randomStrength;
+              vel = directedVel + randomVel;
+          } else {
+              // Pure random movement when no edge found, scaled by random strength
+              float randAngle = rand(pos.xy) * 6.28318;
+              float randSpeed = rand(pos.yx) * randomSpeed * randomStrength;
+              vel += vec2(cos(randAngle), sin(randAngle)) * randSpeed;
+              vel *= 0.95;  // Damping
+          }
+      }
+      
+      if (tgt.x >= 0.0) {
+          vec2 toTarget = tgt - pos;
+          float dist = length(toTarget);
+          
+          if (dist < 0.001) {
+              tgt = vec2(-1.0);
+              float randAngle = rand(pos.xy) * 6.28318;
+              vel = vec2(cos(randAngle), sin(randAngle)) * randomSpeed * randomStrength;
+          } else {
+              // Combine directed and random movement when moving to target
+              vec2 directedVel = normalize(toTarget) * particleSpeed * attractionStrength;
+              vec2 randomVel = vec2(rand(pos.xy) - 0.5, rand(pos.yx) - 0.5) * randomSpeed * randomStrength;
+              vel = directedVel + randomVel;
+          }
+      }
+      
+      pos += vel * deltaTime;
+      
+      if (pos.x < 0.0) { pos.x = 0.0; vel.x *= -1.0; }
+      if (pos.x > 1.0) { pos.x = 1.0; vel.x *= -1.0; }
+      if (pos.y < 0.0) { pos.y = 0.0; vel.y *= -1.0; }
+      if (pos.y > 1.0) { pos.y = 1.0; vel.y *= -1.0; }
+      
+      vPosition = pos;
+      vVelocity = vel;
+      vTarget = tgt;
+  }</script>
+
+    <!-- Edge Detection Vertex Shader -->
+    <script type="x-shader/x-vertex" id="edgeVertexShader">#version 300 es
+in vec2 aPosition;
+out vec2 vTexCoord;
+
+void main() {
+    // Flip the y coordinate here for texture coordinates
+    vTexCoord = vec2(aPosition.x * 0.5 + 0.5, 1.0 - (aPosition.y * 0.5 + 0.5));
+    gl_Position = vec4(aPosition, 0.0, 1.0);
+}</script>
+
+    <!-- Edge Detection Fragment Shader -->
+    <script type="x-shader/x-fragment" id="edgeFragmentShader">#version 300 es
+precision highp float;
+
+in vec2 vTexCoord;
+uniform sampler2D uImage;
+uniform vec2 uResolution;
+uniform float threshold;
+out vec4 fragColor;
+
+void main() {
+    vec2 texel = 1.0 / uResolution;
+    // Use vTexCoord directly since it's already flipped in the vertex shader
+    vec2 tc = vTexCoord;
+    
+    vec3 tl = texture(uImage, tc + texel * vec2(-1, -1)).rgb;
+    vec3 t  = texture(uImage, tc + texel * vec2( 0, -1)).rgb;
+    vec3 tr = texture(uImage, tc + texel * vec2( 1, -1)).rgb;
+    vec3 l  = texture(uImage, tc + texel * vec2(-1,  0)).rgb;
+    vec3 c  = texture(uImage, tc).rgb;
+    vec3 r  = texture(uImage, tc + texel * vec2( 1,  0)).rgb;
+    vec3 bl = texture(uImage, tc + texel * vec2(-1,  1)).rgb;
+    vec3 b  = texture(uImage, tc + texel * vec2( 0,  1)).rgb;
+    vec3 br = texture(uImage, tc + texel * vec2( 1,  1)).rgb;
+
+    vec3 gx = -tl - 2.0 * l - bl + tr + 2.0 * r + br;
+    vec3 gy = -tl - 2.0 * t - tr + bl + 2.0 * b + br;
+    
+    float edge = length(gx) + length(gy);
+    edge = edge > threshold ? 1.0 : 0.0;
+    
+    fragColor = vec4(edge, edge, edge, 1.0);
+}</script>
+
+    <!-- Application Scripts -->
+    <script src="webgl-utils.js"></script>
+    <script src="particles.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>
