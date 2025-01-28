@@ -1,11 +1,12 @@
 /*
 To do:
 Creation / destruction should ebb and flow more (one part of the image creating / one part destroying at all times)
-Animation does not always restart upon change to dat.GUI (is it because of set timeout?)
-Randomize all inputs should select from hardcoded color palettes instead?
+Adjust palettes / add more natural looking palettes
+Choose and use a random palette upon startup
 Bound the random input ranges more so that the output is still "nice on average"
 Export image / video from canvas
 Add toggle for color randomness around selected hue?
+Mobile testing
 Show the original image underneath?
 Footer / about info
 Describe each variable and what it does
@@ -23,6 +24,26 @@ let isAnimating = false;
 let lastTime = 0;
 let isRestarting = false;
 
+let palettes =
+{
+  zissou: ["#78B7C5", "#EBCC2A"],
+  noir: ["#000000", "#FFFFFF"],
+  crimson: ["#5B1A18", "#FD6467"],
+  sea: ["#2f5575", "#94f0dc"],
+  cherry: ["#f1faee", "#e63946"],
+  violet: ["#e0c3fc", "#4d194d"],
+  lakers: ["#652EC7", "#FFD300"],
+  tangerine: ["#B2FAFF", "#FF9472"],
+  vapor: ["#C6FFF1", "#FF36AB"],
+  retro: ["#f6d166", "#df2d2d"],
+  analog: ["#1A1831", "#5bada6"],
+  primary: ["#FFFF00", "#0000FF"],
+  euphoria: ["#361944", "#86BFE7"],
+  emerald: ["#02190C", "#900C3F"],
+  slate: ["#141415", "#9F978D"],
+  sakura: ["#FFB3A7", "#C93756"],
+};
+
 // Configuration
 const CONFIG = {
     particleCount: { value: 300000, min: 200000, max: 700000, step: 1000 },
@@ -31,8 +52,9 @@ const CONFIG = {
     attractionStrength: { value: 12.0, min: 0.1, max: 100.0, step: 0.1 },
     particleOpacity: { value: 0.2, min: 0.05, max: 1.0, step: 0.05 },
     particleSize: { value: 0.8, min: 0.3, max: 1.5, step: 0.1 },
-    particleColor: '#fadcdc',
-    backgroundColor: '#2c0b0b',
+    selectedPalette: 'analog',
+    backgroundColor: '#1A1831',
+    particleColor: '#5bada6',
     IS_PLAYING: true
 };
 
@@ -92,16 +114,43 @@ async function initWebGL() {
 function initGUI() {
     const gui = new dat.GUI();
     
-    // Add controls for each configuration value
+    // Initialize controllers object
+    window.guiControllers = {};
+    
+    // Create a folder for color settings
+    const colorFolder = gui.addFolder('Colors');
+    colorFolder.open(); // Open the colors folder by default
+    
+    // Add palette selector
+    const paletteNames = Object.keys(palettes);
+    window.guiControllers.selectedPalette = colorFolder.add(CONFIG, 'selectedPalette', paletteNames)
+        .name('Color Palette')
+        .onChange(value => {
+            const [bg, particle] = palettes[value];
+            CONFIG.backgroundColor = bg;
+            CONFIG.particleColor = particle;
+            updateConfig('backgroundColor', bg);
+            updateConfig('particleColor', particle);
+            // Update the color controllers
+            window.guiControllers.backgroundColor.updateDisplay();
+            window.guiControllers.particleColor.updateDisplay();
+        });
+    
+    // Add individual color controls
+    window.guiControllers.backgroundColor = colorFolder.addColor(CONFIG, 'backgroundColor')
+        .name('Background')
+        .onChange(v => updateConfig('backgroundColor', v));
+    
+    window.guiControllers.particleColor = colorFolder.addColor(CONFIG, 'particleColor')
+        .name('Particles')
+        .onChange(v => updateConfig('particleColor', v));
+    
+    // Add other controls
     Object.entries(CONFIG).forEach(([key, value]) => {
-        if (typeof value === 'object' && !Array.isArray(value)) {
-            gui.add(CONFIG[key], 'value', value.min, value.max, value.step)
-               .name(key.replace(/_/g, ' '))
-               .onChange(v => updateConfig(key, v));
-        } else if (key.includes('Color')) {
-            gui.addColor(CONFIG, key)
-               .name(key.replace(/_/g, ' '))
-               .onChange(v => updateConfig(key, v));
+        if (typeof value === 'object' && !Array.isArray(value) && key !== 'selectedPalette') {
+            window.guiControllers[key] = gui.add(CONFIG[key], 'value', value.min, value.max, value.step)
+                .name(key.replace(/_/g, ' '))
+                .onChange(v => updateConfig(key, v));
         }
     });
 
@@ -113,280 +162,278 @@ function initGUI() {
 }
 
 function setupEventListeners() {
-    // Handle image upload
-    document.getElementById('imageInput').addEventListener('change', handleImageUpload);
-    
-    // Handle restart button
-    document.getElementById('restartBtn').addEventListener('click', () => safeRestartAnimation());
-    
-    // Add keyboard shortcut for play/pause (spacebar)
-    document.addEventListener('keydown', (e) => {
-        if (e.code === 'Space' && currentImage) {
-            e.preventDefault(); // Prevent page scroll
-            togglePlayPause();
-        }
-    });
+  // Handle image upload
+  document.getElementById('imageInput').addEventListener('change', handleImageUpload);
+  
+  // Handle restart button
+  document.getElementById('restartBtn').addEventListener('click', () => safeRestartAnimation());
+  
+  // Add keyboard shortcut for play/pause (spacebar)
+  document.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' && currentImage) {
+          e.preventDefault(); // Prevent page scroll
+          togglePlayPause();
+      }
+  });
 
-    // Cleanup on page unload
-    window.addEventListener('unload', cleanup);
+  // Cleanup on page unload
+  window.addEventListener('unload', cleanup);
 }
 
 function updateConfig(key, value) {
-    // Prevent updates while restarting
-    if (isRestarting) return;
+  // Prevent updates while restarting
+  if (isRestarting) return;
 
-    const oldValue = CONFIG[key].value;
-    
-    // Update the configuration
-    if (typeof value === 'object' && value.hasOwnProperty('value')) {
-        CONFIG[key].value = value.value;
-    } else if (key.includes('Color')) {
-        CONFIG[key] = value;
-    } else {
-        CONFIG[key] = { ...CONFIG[key], value: value };
-    }
+  // These parameters can be updated without restarting
+  const noRestartParams = [
+      'particleOpacity',
+      'particleSpeed',
+      'attractionStrength',
+      'particleSize',
+      'particleColor',
+      'backgroundColor',
+      'IS_PLAYING'
+  ];
 
-    // These parameters can be updated without restarting
-    const noRestartParams = [
-        'particleOpacity',
-        'particleSize',
-        'particleColor'
-    ];
+  // Update the configuration
+  if (key.includes('Color')) {
+      CONFIG[key] = value;
+  } else if (typeof CONFIG[key] === 'object' && CONFIG[key].hasOwnProperty('value')) {
+      CONFIG[key] = {
+          ...CONFIG[key],
+          value: typeof value === 'object' ? value.value : value
+      };
+  } else {
+      CONFIG[key] = value;
+  }
 
-    // Handle immediate visual updates
-    if (key === 'backgroundColor') {
-        updateBackgroundColor();
-        return;
-    }
+  // Handle special cases
+  if (key === 'backgroundColor') {
+      updateBackgroundColor();
+      return;
+  }
 
-    // Only restart if necessary and if we have an image
-    if (!noRestartParams.includes(key) && currentImage && oldValue !== value) {
-        safeRestartAnimation();
-    }
-}
-
-function resizeCanvasToImage(image) {
-    const maxSize = Math.min(window.innerWidth, window.innerHeight) - 40;
-    const scale = Math.min(maxSize / image.width, maxSize / image.height);
-    
-    canvas.width = Math.round(image.width * scale);
-    canvas.height = Math.round(image.height * scale);
-    glState.setViewport(0, 0, canvas.width, canvas.height);
-}
-
-async function handleImageUpload(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    
-    if (!file.type.startsWith('image/')) {
-        alert('Please upload an image file');
-        return;
-    }
-    
-    try {
-        const img = await loadImage(file);
-        stopAnimation();
-        glState.clear();
-        
-        currentImage = img;
-        resizeCanvasToImage(img);
-        
-        await safeRestartAnimation();
-        
-    } catch (error) {
-        console.error('Error processing image:', error);
-        alert('Error processing image. Please try a different image.');
-    }
-}
-
-function loadImage(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            const img = new Image();
-            img.onload = () => resolve(img);
-            img.onerror = () => reject(new Error('Failed to load image'));
-            img.src = event.target.result;
-        };
-        reader.onerror = () => reject(new Error('Failed to read file'));
-        reader.readAsDataURL(file);
-    });
-}
-
-function updateBackgroundColor() {
-    glState.setClearColor(...WebGLUtils.hexToRGB(CONFIG.backgroundColor), 1.0);
-}
-
-function initGUI() {
-    window.gui = new dat.GUI();
-    
-    // Store controllers for later access
-    window.guiControllers = {};
-    
-    // Add controls for each configuration value
-    Object.entries(CONFIG).forEach(([key, value]) => {
-        if (typeof value === 'object' && !Array.isArray(value)) {
-            window.guiControllers[key] = gui.add(CONFIG[key], 'value', value.min, value.max, value.step)
-               .name(key.replace(/_/g, ' '))
-               .onChange(v => updateConfig(key, v));
-        } else if (key.includes('Color')) {
-            window.guiControllers[key] = gui.addColor(CONFIG, key)
-               .name(key.replace(/_/g, ' '))
-               .onChange(v => updateConfig(key, v));
-        }
-    });
-
-    // Add play/pause button
-    gui.add({ togglePlayPause }, 'togglePlayPause').name('Pause/Play');
-
-    // Add randomize button
-    gui.add({ randomize: randomizeInputs }, 'randomize').name('Randomize All');
+  // Only restart if:
+  // 1. The parameter requires restart
+  // 2. We have an image
+  if (!noRestartParams.includes(key) && 
+      currentImage) {
+      safeRestartAnimation();
+  }
 }
 
 function randomizeInputs() {
-    if (isRestarting) return;
-    
-    Object.entries(CONFIG).forEach(([key, value]) => {
-        if (typeof value === 'object' && !Array.isArray(value)) {
-            const newValue = WebGLUtils.getRandomValue(value.min, value.max, value.step);
-            CONFIG[key].value = newValue;
-            // Update the GUI controller
-            if (window.guiControllers[key]) {
-                window.guiControllers[key].setValue(newValue);
-            }
-        } else if (key.includes('Color')) {
-            const newColor = WebGLUtils.getRandomColor();
-            CONFIG[key] = newColor;
-            // Update the GUI controller
-            if (window.guiControllers[key]) {
-                window.guiControllers[key].setValue(newColor);
-            }
-        }
-    });
-    
-    updateBackgroundColor();
-    if (currentImage) {
-        safeRestartAnimation();
-    }
+  if (isRestarting) return;
+  
+  // Randomly select a palette
+  const paletteKeys = Object.keys(palettes);
+  const randomPaletteKey = paletteKeys[Math.floor(Math.random() * paletteKeys.length)];
+  const [newBgColor, newParticleColor] = palettes[randomPaletteKey];
+  
+  // Update colors and palette selection
+  CONFIG.selectedPalette = randomPaletteKey;
+  CONFIG.backgroundColor = newBgColor;
+  CONFIG.particleColor = newParticleColor;
+  
+  // Randomize other parameters
+  Object.entries(CONFIG).forEach(([key, value]) => {
+      if (typeof value === 'object' && !Array.isArray(value) && key !== 'selectedPalette') {
+          const newValue = WebGLUtils.getRandomValue(value.min, value.max, value.step);
+          CONFIG[key].value = newValue;
+          // Update the GUI controller
+          if (window.guiControllers[key]) {
+              window.guiControllers[key].setValue(newValue);
+          }
+      }
+  });
+  
+  // Update GUI controllers for colors and palette
+  if (window.guiControllers.selectedPalette) {
+      CONFIG.selectedPalette = randomPaletteKey; // Update the config value first
+      window.guiControllers.selectedPalette.updateDisplay(); // Then update the display
+  }
+  if (window.guiControllers.backgroundColor) {
+      window.guiControllers.backgroundColor.setValue(newBgColor);
+  }
+  if (window.guiControllers.particleColor) {
+      window.guiControllers.particleColor.setValue(newParticleColor);
+  }
+  
+  updateBackgroundColor();
+  if (currentImage) {
+      safeRestartAnimation();
+  }
+}
+
+function resizeCanvasToImage(image) {
+  const maxSize = Math.min(window.innerWidth, window.innerHeight) - 40;
+  const scale = Math.min(maxSize / image.width, maxSize / image.height);
+  
+  canvas.width = Math.round(image.width * scale);
+  canvas.height = Math.round(image.height * scale);
+  glState.setViewport(0, 0, canvas.width, canvas.height);
+}
+
+async function handleImageUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  
+  if (!file.type.startsWith('image/')) {
+      alert('Please upload an image file');
+      return;
+  }
+  
+  try {
+      const img = await loadImage(file);
+      stopAnimation();
+      glState.clear();
+      
+      currentImage = img;
+      resizeCanvasToImage(img);
+      
+      await safeRestartAnimation();
+      
+  } catch (error) {
+      console.error('Error processing image:', error);
+      alert('Error processing image. Please try a different image.');
+  }
+}
+
+function loadImage(file) {
+  return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = () => reject(new Error('Failed to load image'));
+          img.src = event.target.result;
+      };
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsDataURL(file);
+  });
+}
+
+function updateBackgroundColor() {
+  glState.setClearColor(...WebGLUtils.hexToRGB(CONFIG.backgroundColor), 1.0);
 }
 
 function safeRestartAnimation() {
-    if (!currentImage || isRestarting) return;
-    
-    return new Promise((resolve, reject) => {
-        isRestarting = true;
-        
-        // Stop current animation
-        stopAnimation();
-        
-        // Clean up existing particle system
-        if (particleSystem) {
-            try {
-                particleSystem.dispose();
-            } catch (error) {
-                console.error('Error disposing particle system:', error);
-            }
-            particleSystem = null;
-        }
-        
-        glState.clear();
-        
-        // Small delay to ensure cleanup is complete
-        setTimeout(() => {
-            try {
-                // Create new particle system
-                particleSystem = new ParticleSystem(gl, CONFIG.particleCount.value);
-                particleSystem.processImage(currentImage);
-                
-                // Reset state and restart
-                CONFIG.IS_PLAYING = true;
-                isRestarting = false;
-                startAnimation();
-                resolve();
-            } catch (error) {
-                console.error('Error during restart:', error);
-                isRestarting = false;
-                reject(error);
-                
-                // Attempt to recover
-                try {
-                    glState.clear();
-                    particleSystem = new ParticleSystem(gl, CONFIG.particleCount.value);
-                    particleSystem.processImage(currentImage);
-                    startAnimation();
-                } catch (recoveryError) {
-                    console.error('Failed to recover from restart error:', recoveryError);
-                    alert('An error occurred. Please refresh the page.');
-                }
-            }
-        }, 50); // Small delay for cleanup
-    });
+  if (!currentImage || isRestarting) return;
+  
+  return new Promise((resolve, reject) => {
+      isRestarting = true;
+      
+      // Stop current animation
+      stopAnimation();
+      
+      // Clean up existing particle system
+      if (particleSystem) {
+          try {
+              particleSystem.dispose();
+          } catch (error) {
+              console.error('Error disposing particle system:', error);
+          }
+          particleSystem = null;
+      }
+      
+      glState.clear();
+      
+      // Small delay to ensure cleanup is complete
+      setTimeout(() => {
+          try {
+              // Create new particle system
+              particleSystem = new ParticleSystem(gl, CONFIG.particleCount.value);
+              particleSystem.processImage(currentImage);
+              
+              // Reset state and restart
+              CONFIG.IS_PLAYING = true;
+              isRestarting = false;
+              startAnimation();
+              resolve();
+          } catch (error) {
+              console.error('Error during restart:', error);
+              isRestarting = false;
+              reject(error);
+              
+              // Attempt to recover
+              try {
+                  glState.clear();
+                  particleSystem = new ParticleSystem(gl, CONFIG.particleCount.value);
+                  particleSystem.processImage(currentImage);
+                  startAnimation();
+              } catch (recoveryError) {
+                  console.error('Failed to recover from restart error:', recoveryError);
+                  alert('An error occurred. Please refresh the page.');
+              }
+          }
+      }, 25); // Small delay for cleanup
+  });
 }
 
 function startAnimation() {
-    if (!isAnimating && !isRestarting && particleSystem) {
-        isAnimating = true;
-        lastTime = 0;
-        animationFrameId = requestAnimationFrame(animate);
-    }
+  if (!isAnimating && !isRestarting && particleSystem) {
+      isAnimating = true;
+      lastTime = 0;
+      animationFrameId = requestAnimationFrame(animate);
+  }
 }
 
 function stopAnimation() {
-    isAnimating = false;
-    if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
-        animationFrameId = null;
-    }
+  isAnimating = false;
+  if (animationFrameId) {
+      cancelAnimationFrame(animationFrameId);
+      animationFrameId = null;
+  }
 }
 
 function animate(currentTime) {
-    if (!particleSystem || isRestarting) {
-        isAnimating = false;
-        return;
-    }
+  if (!particleSystem || isRestarting) {
+      isAnimating = false;
+      return;
+  }
 
-    const deltaTime = lastTime ? currentTime - lastTime : 0;
-    lastTime = currentTime;
-    
-    try {
-        glState.clear();
-        particleSystem.update(deltaTime);
-        particleSystem.render();
-        
-        if (isAnimating && CONFIG.IS_PLAYING) {
-            animationFrameId = requestAnimationFrame(animate);
-        }
-    } catch (error) {
-        console.error('Animation error:', error);
-        stopAnimation();
-        safeRestartAnimation();
-    }
+  const deltaTime = lastTime ? currentTime - lastTime : 0;
+  lastTime = currentTime;
+  
+  try {
+      glState.clear();
+      particleSystem.update(deltaTime);
+      particleSystem.render();
+      
+      if (isAnimating && CONFIG.IS_PLAYING) {
+          animationFrameId = requestAnimationFrame(animate);
+      }
+  } catch (error) {
+      console.error('Animation error:', error);
+      stopAnimation();
+      safeRestartAnimation();
+  }
 }
 
 function togglePlayPause() {
-    if (isRestarting) return;
-    
-    CONFIG.IS_PLAYING = !CONFIG.IS_PLAYING;
-    if (CONFIG.IS_PLAYING) {
-        startAnimation();
-    } else {
-        stopAnimation();
-    }
+  if (isRestarting) return;
+  
+  CONFIG.IS_PLAYING = !CONFIG.IS_PLAYING;
+  if (CONFIG.IS_PLAYING) {
+      startAnimation();
+  } else {
+      stopAnimation();
+  }
 }
 
 function cleanup() {
-    stopAnimation();
-    if (particleSystem) {
-        try {
-            particleSystem.dispose();
-            particleSystem = null;
-        } catch (error) {
-            console.error('Error during cleanup:', error);
-        }
-    }
-    if (resourceManager) {
-        resourceManager.dispose();
-    }
+  stopAnimation();
+  if (particleSystem) {
+      try {
+          particleSystem.dispose();
+          particleSystem = null;
+      } catch (error) {
+          console.error('Error during cleanup:', error);
+      }
+  }
+  if (resourceManager) {
+      resourceManager.dispose();
+  }
 }
 
 // Load the default image

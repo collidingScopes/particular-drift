@@ -94,13 +94,6 @@ canvas {
   background: var(--primary-active);
 }
 
-/* Info text styles */
-#info {
-  color: white;
-  margin-left: var(--spacing-sm);
-  white-space: nowrap;
-}
-
 /* Slider layout */
 .sliders {
   display: grid;
