@@ -4,11 +4,13 @@
 in vec2 position;    // Current particle position (normalized 0-1)
 in vec2 velocity;    // Current particle velocity
 in vec2 target;      // Target position for edge tracking
+in float hueOffset;  // Hue offset for this particle
 
 // Output varyings for transform feedback
 out vec2 vPosition;  // Updated particle position
 out vec2 vVelocity;  // Updated particle velocity
 out vec2 vTarget;    // Updated target position
+out float vHueOffset; // Pass through the hue offset
 
 // Uniform inputs
 uniform sampler2D edgeTexture;      // Edge detection result texture
@@ -188,4 +190,5 @@ void main() {
     vPosition = pos;
     vVelocity = vel;
     vTarget = tgt;
+    vHueOffset = hueOffset;  // Pass through the hue offset unchanged
 }

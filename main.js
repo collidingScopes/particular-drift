@@ -7,14 +7,16 @@ Toggle for different noise modes (perlin, simplex, other flow field types, etc.)
 Can particles turn into a different color when they stick to an edge?
 Export image / video from canvas
 Add toggle for color randomness around selected hue?
+Improve UI (check ASCII / past projects)
 Mobile testing
 User control / modification of flow field
 Show the original image underneath?
 Footer / about info
 Describe each variable and what it does
-Github readme
+Github readme -- get Claude to write it, including overview, installation instructions, parameter descriptions, etc.
 site OG
 hotkeys
+Create image / video examples
 */
 
 // Global state and managers
@@ -49,7 +51,7 @@ let palettes =
 const CONFIG = {
     particleCount: { value: 300000, min: 200000, max: 700000, step: 1000 },
     edgeThreshold: { value: 0.4, min: 0.1, max: 1.5, step: 0.1 },
-    particleSpeed: { value: 12.0, min: 2.0, max: 45.0, step: 0.5 },
+    particleSpeed: { value: 12.0, min: 2.0, max: 70.0, step: 0.5 },
     attractionStrength: { value: 85.0, min: 1.0, max: 200.0, step: 1.0 },
     particleOpacity: { value: 0.2, min: 0.05, max: 1.0, step: 0.05 },
     particleSize: { value: 0.8, min: 0.3, max: 1.5, step: 0.1 },
@@ -90,10 +92,10 @@ async function initWebGL() {
         );
 
         await resourceManager.createProgram(
-            'update',
-            'update',
-            'update',
-            ['vPosition', 'vVelocity', 'vTarget']
+          'update',
+          'update',
+          'update',
+          ['vPosition', 'vVelocity', 'vTarget']
         );
 
         await resourceManager.createProgram(
