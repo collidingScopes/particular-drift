@@ -1,11 +1,9 @@
 /*
 To do:
-Adjust min/max/default values of sliders
 Creation / destruction should ebb and flow more (one part of the image creating / one part destroying at all times)
 Animation does not always restart upon change to dat.GUI (is it because of set timeout?)
 Randomize all inputs should select from hardcoded color palettes instead?
 Bound the random input ranges more so that the output is still "nice on average"
-Default image upon startup
 Export image / video from canvas
 Add toggle for color randomness around selected hue?
 Show the original image underneath?
@@ -28,11 +26,11 @@ let isRestarting = false;
 // Configuration
 const CONFIG = {
     particleCount: { value: 300000, min: 200000, max: 700000, step: 1000 },
-    edgeThreshold: { value: 0.5, min: 0.1, max: 3.0, step: 0.1 },
-    particleSpeed: { value: 12.0, min: 1.0, max: 60.0, step: 0.5 },
-    attractionStrength: { value: 10.0, min: 0.1, max: 100.0, step: 0.1 },
-    particleOpacity: { value: 0.3, min: 0.1, max: 1.0, step: 0.1 },
-    particleSize: { value: 1.0, min: 0.5, max: 2.0, step: 0.1 },
+    edgeThreshold: { value: 0.5, min: 0.1, max: 2.0, step: 0.1 },
+    particleSpeed: { value: 18.0, min: 1.0, max: 60.0, step: 0.5 },
+    attractionStrength: { value: 12.0, min: 0.1, max: 100.0, step: 0.1 },
+    particleOpacity: { value: 0.2, min: 0.05, max: 1.0, step: 0.05 },
+    particleSize: { value: 0.8, min: 0.3, max: 1.5, step: 0.1 },
     particleColor: '#fadcdc',
     backgroundColor: '#2c0b0b',
     IS_PLAYING: true
@@ -391,5 +389,22 @@ function cleanup() {
     }
 }
 
+// Load the default image
+async function loadDefaultImage() {
+  try {
+      const response = await fetch('/assets/face.webp');
+      const blob = await response.blob();
+      const img = await loadImage(blob);
+      currentImage = img;
+      resizeCanvasToImage(img);
+      await safeRestartAnimation();
+  } catch (error) {
+      console.error('Error loading default image:', error);
+  }
+}
+
 // Initialize the application
-window.addEventListener('load', initWebGL);
+window.addEventListener('load', async () => {
+  await initWebGL();
+  await loadDefaultImage();
+});

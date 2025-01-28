@@ -34,8 +34,8 @@ void main() {
     vec4 edge = texture(edgeTexture, pos);
     vec2 flow = flowField(pos, time) * particleSpeed * 0.001 * 2.0;
     
-    // Only very strong edges can hold particles
-    if (edge.r > 0.4) {
+    // Only strong edges can hold particles
+    if (edge.r > 0.3) {
         float edgeStrength = smoothstep(0.85, 1.0, edge.r);
         // Need much higher attraction to maintain stickiness
         float baseStickiness = smoothstep(15.0, 40.0, attractionStrength);
@@ -43,8 +43,8 @@ void main() {
         // Even strong edges have reduced stickiness
         float stickiness = mix(baseStickiness * 1.0, 0.9, edgeStrength * edgeStrength);
         
-        // Much more likely to become unstuck
-        if (stickiness < 0.7 || edgeStrength < 0.9 || rand(pos + time * 0.008) > stickiness) {
+        // probability to become unstuck
+        if (stickiness < 0.7 || edgeStrength < 0.9 || rand(pos + time * 0.150) > stickiness) {
             // Stronger flow influence when becoming unstuck
             vel = mix(flow * 1.2, vel * 0.9, stickiness);
             tgt = vec2(-1.0);
