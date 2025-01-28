@@ -4,6 +4,7 @@ class ParticleSystem {
       this.particleCount = particleCount;
       this.currentIndex = 0;
       this.time = 0;
+      this.noiseSeed = Math.random() * 1000; // Random seed for Perlin noise
       
       // Get programs from resource manager
       this.updateProgram = resourceManager.programs.get('update');
@@ -32,7 +33,8 @@ class ParticleSystem {
               edgeTexture: gl.getUniformLocation(this.updateProgram, 'edgeTexture'),
               particleSpeed: gl.getUniformLocation(this.updateProgram, 'particleSpeed'),
               attractionStrength: gl.getUniformLocation(this.updateProgram, 'attractionStrength'),
-              time: gl.getUniformLocation(this.updateProgram, 'time')
+              time: gl.getUniformLocation(this.updateProgram, 'time'),
+              noiseSeed: gl.getUniformLocation(this.updateProgram, 'noiseSeed'),
           },
           edge: {
               resolution: gl.getUniformLocation(this.edgeProgram, 'uResolution'),
@@ -228,6 +230,7 @@ class ParticleSystem {
       gl.uniform1f(this.uniforms.update.time, this.time);
       gl.uniform1f(this.uniforms.update.particleSpeed, CONFIG.particleSpeed.value);
       gl.uniform1f(this.uniforms.update.attractionStrength, CONFIG.attractionStrength.value);
+      gl.uniform1f(this.uniforms.update.noiseSeed, this.noiseSeed);
 
       // Set up transform feedback
       glState.bindVAO(this.vaos[this.currentIndex]);

@@ -3,10 +3,12 @@ To do:
 Creation / destruction should ebb and flow more (one part of the image creating / one part destroying at all times)
 Adjust palettes / add more natural looking palettes
 Choose and use a random palette upon startup
-Bound the random input ranges more so that the output is still "nice on average"
+Toggle for different noise modes (perlin, simplex, other flow field types, etc.)
+Can particles turn into a different color when they stick to an edge?
 Export image / video from canvas
 Add toggle for color randomness around selected hue?
 Mobile testing
+User control / modification of flow field
 Show the original image underneath?
 Footer / about info
 Describe each variable and what it does
@@ -26,7 +28,6 @@ let isRestarting = false;
 
 let palettes =
 {
-  zissou: ["#78B7C5", "#EBCC2A"],
   noir: ["#000000", "#FFFFFF"],
   crimson: ["#5B1A18", "#FD6467"],
   sea: ["#2f5575", "#94f0dc"],
@@ -47,9 +48,9 @@ let palettes =
 // Configuration
 const CONFIG = {
     particleCount: { value: 300000, min: 200000, max: 700000, step: 1000 },
-    edgeThreshold: { value: 0.5, min: 0.1, max: 2.0, step: 0.1 },
-    particleSpeed: { value: 18.0, min: 1.0, max: 60.0, step: 0.5 },
-    attractionStrength: { value: 12.0, min: 0.1, max: 100.0, step: 0.1 },
+    edgeThreshold: { value: 0.4, min: 0.1, max: 1.5, step: 0.1 },
+    particleSpeed: { value: 12.0, min: 2.0, max: 45.0, step: 0.5 },
+    attractionStrength: { value: 85.0, min: 1.0, max: 200.0, step: 1.0 },
     particleOpacity: { value: 0.2, min: 0.05, max: 1.0, step: 0.05 },
     particleSize: { value: 0.8, min: 0.3, max: 1.5, step: 0.1 },
     selectedPalette: 'analog',
@@ -237,7 +238,7 @@ function randomizeInputs() {
   
   // Randomize other parameters
   Object.entries(CONFIG).forEach(([key, value]) => {
-      if (typeof value === 'object' && !Array.isArray(value) && key !== 'selectedPalette') {
+      if (typeof value === 'object' && !Array.isArray(value) && key !== 'selectedPalette' && key !== 'attractionStrength') {
           const newValue = WebGLUtils.getRandomValue(value.min, value.max, value.step);
           CONFIG[key].value = newValue;
           // Update the GUI controller
@@ -246,7 +247,15 @@ function randomizeInputs() {
           }
       }
   });
-  
+
+  //set attractionStrength based on randomly chosen particleSpeed
+  //ratio vs. max value can be -20% to +40% vs. the value of the particleSpeed
+  let speedRatio = CONFIG['particleSpeed'].value / CONFIG['particleSpeed'].max;
+  let ratioAdjustment = (Math.random()*0.6 - 0.2);
+  let attractionStrengthValue = CONFIG['attractionStrength'].max * (speedRatio+ratioAdjustment);
+  CONFIG['attractionStrength'].value = attractionStrengthValue;
+  window.guiControllers['attractionStrength'].setValue(attractionStrengthValue);
+
   // Update GUI controllers for colors and palette
   if (window.guiControllers.selectedPalette) {
       CONFIG.selectedPalette = randomPaletteKey; // Update the config value first
