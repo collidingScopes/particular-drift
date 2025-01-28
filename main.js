@@ -449,11 +449,11 @@ function cleanup() {
 // Load the default image
 async function loadDefaultImage() {
   try {
-      const response = await fetch('https://github.com/collidingScopes/particleDissolve/blob/f1064ded5afb1aa2dc55b5d0e834a79781cd71e1/assets/face.webp');
-      const blob = await response.blob();
-      const img = await loadImage(blob);
-      currentImage = img;
-      resizeCanvasToImage(img);
+      //const response = await fetch('https://github.com/collidingScopes/particleDissolve/assets/face.webp');
+      //const blob = await response.blob();
+      const defaultImg = document.querySelector("#defaultImage");
+      currentImage = defaultImg;
+      resizeCanvasToImage(defaultImg);
       await safeRestartAnimation();
   } catch (error) {
       console.error('Error loading default image:', error);
