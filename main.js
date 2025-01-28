@@ -4,11 +4,10 @@ Creation / destruction should ebb and flow more (one part of the image creating 
 Adjust palettes / add more natural looking palettes
 Choose and use a random palette upon startup
 Toggle for different noise modes (perlin, simplex, other flow field types, etc.)
-Can particles turn into a different color when they stick to an edge?
 Export image / video from canvas
-Add toggle for color randomness around selected hue?
 Improve UI (check ASCII / past projects)
 Mobile testing
+project naming
 User control / modification of flow field
 Show the original image underneath?
 Footer / about info
@@ -450,7 +449,7 @@ function cleanup() {
 // Load the default image
 async function loadDefaultImage() {
   try {
-      const response = await fetch('/assets/face.webp');
+      const response = await fetch('https://github.com/collidingScopes/particleDissolve/blob/f1064ded5afb1aa2dc55b5d0e834a79781cd71e1/assets/face.webp');
       const blob = await response.blob();
       const img = await loadImage(blob);
       currentImage = img;
