@@ -463,5 +463,9 @@ async function loadDefaultImage() {
 // Initialize the application
 window.addEventListener('load', async () => {
   await initWebGL();
-  await loadDefaultImage();
+  
+  setTimeout(() => {
+    loadDefaultImage();
+  }, 1000);
+
 });
