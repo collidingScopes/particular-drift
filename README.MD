@@ -4,6 +4,10 @@ Turn images into flowing particle animations! This javascript / WebGL tool creat
 
 <img src="/assets/example.gif">
 
+## Live Demo
+
+Try it out at: [https://collidingscopes.github.io/particular-drift/](https://collidingscopes.github.io/particular-drift/)
+
 ## Features
 
 - Upload any image and convert it to a dynamic particle animation
@@ -13,10 +17,6 @@ Turn images into flowing particle animations! This javascript / WebGL tool creat
 - Export animations as images or videos
 - Fully client-side processing - no server uploads required
 - MIT licensed and free for both personal and commercial use
-
-## Live Demo
-
-Try it out at: [https://collidingscopes.github.io/particular-drift/](https://collidingscopes.github.io/particular-drift/)
 
 ## Technical Details
 
@@ -68,6 +68,11 @@ Users can control various aspects of the animation:
 - `[v]`: Start and stop video export
 - `[s]`: Save a screenshot image
 - `[u]`: Upload new image
+
+## Donations
+If you found this tool useful, feel free to buy me a coffee. This would be much appreciated during late-night coding sessions!
+
+<a href="https://www.buymeacoffee.com/stereoDrift" target="_blank"><img src="https://www.buymeacoffee.com/assets/img/custom_images/yellow_img.png" alt="Buy Me A Coffee"></a>
 
 ## Browser Requirements
 
