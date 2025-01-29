@@ -69,11 +69,6 @@ Users can control various aspects of the animation:
 - `[s]`: Save a screenshot image
 - `[u]`: Upload new image
 
-## Donations
-If you found this tool useful, feel free to buy me a coffee. This would be much appreciated during late-night coding sessions!
-
-<a href="https://www.buymeacoffee.com/stereoDrift" target="_blank"><img src="https://www.buymeacoffee.com/assets/img/custom_images/yellow_img.png" alt="Buy Me A Coffee"></a>
-
 ## Browser Requirements
 
 - WebGL2 support
@@ -107,7 +102,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE.txt) file for details.
 
 ## Other Projects
 
@@ -116,3 +111,8 @@ Check out my other free/open source projects:
 - [Shape Shimmer](https://collidingScopes.github.io/shimmer): Turn photos into funky wave animations
 - [Colliding Scopes](https://collidingScopes.github.io): Turn photos into kaleidoscope animations
 - [Force-Field Animation](https://collidingScopes.github.io/forcefield): Turn photos into particle animations
+
+## Donations
+If you found this tool useful, feel free to buy me a coffee. This would be much appreciated during late-night coding sessions!
+
+<a href="https://www.buymeacoffee.com/stereoDrift" target="_blank"><img src="https://www.buymeacoffee.com/assets/img/custom_images/yellow_img.png" alt="Buy Me A Coffee"></a>
