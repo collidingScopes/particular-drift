@@ -1,165 +1,342 @@
-/* Base styles */
-:root {
-  --primary-color: #4CAF50;
-  --primary-hover: #45a049;
-  --primary-active: #3d8b40;
-  --bg-dark: #1a1a1a;
-  --bg-overlay: rgba(255, 255, 255, 0.1);
-  --border-color: rgba(255, 255, 255, 0.2);
-  --spacing-sm: 8px;
-  --spacing-md: 15px;
-  --spacing-lg: 20px;
-}
-
-body { 
-  margin: 0; 
-  min-height: 100vh;
-  padding: var(--spacing-lg);
-  box-sizing: border-box;
-  background: var(--bg-dark);
-  font-family: Arial, sans-serif;
-  display: flex; 
-  flex-direction: column; 
-  align-items: center;
-}
-
-/* Canvas styles */
-canvas { 
-  background: black;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-  max-width: calc(100vw - 40px);
-  max-height: calc(100vh - 120px);
-  margin: var(--spacing-lg) 0;
-}
-
-/* Control panel styles */
-#controls { 
-  width: 100%;
-  max-width: 600px;
-  margin-bottom: var(--spacing-lg);
-  padding: var(--spacing-md);
-  background: var(--bg-overlay);
-  border-radius: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-md);
-  box-sizing: border-box;
-}
-
-/* Input group styles */
-.input-group {
-  display: flex;
-  gap: var(--spacing-sm);
-  align-items: center;
-}
-
-/* Common input styles */
-.input-control {
-  padding: var(--spacing-sm);
-  border-radius: 4px;
-  border: 1px solid var(--border-color);
-  background: var(--bg-overlay);
-  transition: background 0.2s ease;
-}
-
-.input-control:hover {
-  background: rgba(255, 255, 255, 0.15);
-}
-
-/* File input styles */
-.input-group input[type="file"] {
-  composes: input-control;
-  color: white;
-  flex: 1;
-}
-
-/* Button styles */
-#restartBtn {
-  padding: var(--spacing-sm) var(--spacing-md);
-  background: var(--primary-color);
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  white-space: nowrap;
-  transition: background 0.2s ease;
-}
-
-#restartBtn:hover {
-  background: var(--primary-hover);
-}
-
-#restartBtn:active {
-  background: var(--primary-active);
-}
-
-/* Slider layout */
-.sliders {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: var(--spacing-sm);
-}
-
-/* Slider group styles */
-.slider-group {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.slider-group label {
-  color: white;
-  font-size: 14px;
-}
-
-/* Range input styles */
-.slider-group input[type="range"] {
-  width: 100%;
+html, body{
+  font-size: 16px;
+  font-family: Helvetica;
+  /*max-width: 100%;
+  overflow-x: hidden;*/
   margin: 0;
-  height: 6px;
-  background: var(--bg-overlay);
-  border-radius: 4px;
-  -webkit-appearance: none;
+  padding: 0;
+  position: absolute;
+  background-color: #151632;
 }
 
-/* Range input thumb styles */
-.slider-group input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 16px;
-  height: 16px;
-  background: var(--primary-color);
-  border-radius: 50%;
-  cursor: pointer;
-  transition: background 0.2s ease;
+#gui {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background-color: black;
+  opacity: 0.9;
+  margin: 0;
+  z-index: 10;
+  float: right;
 }
 
-.slider-group input[type="range"]::-moz-range-thumb {
-  width: 16px;
-  height: 16px;
-  background: var(--primary-color);
-  border: none;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: background 0.2s ease;
+.close-button {
+  font-size: 1.2em;
+  font-weight: bold;
+  background-color: rgb(99, 9, 64) !important;
+}
+/*
+.dg {
+  margin: 0 !important;
 }
 
-/* Color input styles */
-.slider-group input[type="color"] {
-  width: 50px;
-  height: 25px;
-  padding: 0 2px;
-  background: none;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  cursor: pointer;
-  transition: border-color 0.2s ease;
+.closed{
+  height: 0px;
+}
+*/
+
+.canvasDiv {
+  display:flex;
+  /* display:block; */
+  margin-top: 2vh;
+  /* margin: 0 auto; */
+  text-align: center;
+  width:98vw;
+  /* box-sizing: border-box; */
 }
 
-.slider-group input[type="color"]:hover {
-  border-color: rgba(255, 255, 255, 0.4);
+#canvas {
+  margin: 0 auto;
+  padding: 0;
+  background: rgb(0, 0, 0);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+  max-width: calc(100vw - 20px);
+  max-height: calc(100vh - 80px);
+}
+
+#introDiv{
+  width: 100vw;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+
+  background-color: #2D0A3D;
+  padding-top: 2px;
+  padding-bottom: 10px;
+  text-align: center;
+  color:white;
+}
+
+#siteNameText{
+  font-size: 42px;
+  font-family: "Permanent Marker";
+  font-weight: 400;
+  font-style: normal;
+  display:block;
+}
+
+#subtitleText{
+  font-size: 24px;
+  font-family: "Permanent Marker";
+  font-weight: 400;
+  font-style: normal;
+  font-style: italic;
+  margin:0 auto;
+}
+
+#aboutText{
+  font-size: 32px;
+  font-family: "Permanent Marker";
+  font-weight: 400;
+  font-style: normal;
+  display:block;
+  padding: 0;
+  margin: 0;
+}
+
+#notesDiv{
+  width:98vw;
+  box-sizing: border-box;
+  /*overflow: hidden;*/
+  padding: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  /*border-top: 5px solid #581845;*/
+  background-color: #151632;
+  color: white;
+}
+
+
+
+#textBox {
+  min-width: 350px;
+  max-width: 75vw;
+}
+
+#textBox > ul > li {
+  margin-bottom: 6px;
+}
+
+#linksDiv{
+  background-color: #faebf6;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.x-link {
+  text-decoration: none;
+}
+
+h2 {
+  font-size: 40px;
+  font-family: Helvetica;
+}
+
+#buttonDiv {
+  display: inline block;
+  margin: 0 auto;
+  width: 100vw;
+}
+
+.displayCanvas {
+  float: left;
+}
+
+.exampleImage {
+  max-width: 70vw;
+  margin: 0 auto;
+  padding: 0;
+  display: block;
 }
 
 .hidden {
-  display: none;
+  display: none !important;
+}
+
+
+/* Styling for image upload field */
+input, select {
+  cursor: pointer;
+}
+
+input[type="file"] {
+  /*display: none;*/
+  position:absolute;
+  top:-9999px;
+}
+.custom-file-upload {
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background-color: #226f63;
+  color: #fff;
+  font-weight: bold;
+  font-size: 1em;
+  font-family: Helvetica;
+  display: inline-block;
+  padding: 8px;
+  cursor: pointer;
+  margin-left: 3px;
+  margin-right: 2px;
+}
+
+/* Styling for color inputs */
+input[type="color"] {
+  border: none;
+  background-color: none;
+  padding:0;
+  margin: 0px;
+}
+
+input[type="checkbox"] {
+  min-width: 20px;
+  min-height: 20px;
+}
+
+button {
+  padding: 6px;
+  font-weight: bold;
+  font-size: 1em;
+
+  margin: 10px 3px 10px 3px;
+  /*margin-left: 3px;
+  margin-right: 3px;*/
+
+  border: 3px solid #79e2d2;
+  border-radius: 6px;
+  background-color: #ffffff;
+
+  cursor: pointer;
+}
+
+.tableText{
+  font-weight: bold;
+  font-size: 0.7em;
+  font-family: Helvetica;
+  color:white;
+}
+
+pre {
+  margin: 0;
+}
+
+/* applies when screen is wide enough */ 
+@media (min-width: 700px) {
+  button, .tableText {
+    font-size: 1em;
+  }
+}
+
+table {
+  border-collapse: collapse;
+  margin:auto;
+}
+
+td {
+  max-width: 250px;
+}
+
+#inputTable{
+  font-size:0.8em;
+  text-align: center;
+  /*min-width: 280px;
+  width:80vw;
+  max-width: 350px;
+  margin-top: 15px;
+  margin-bottom: 15px;
+  border-top: 1px solid black;
+  border-bottom: 1px solid black;
+  */
+  width:100vw;
+  /*background-color: rgb(228, 218, 255);*/
+  background-color: #2D0A3D;
+}
+
+#textInput{
+  width: 85vw !important;
+  border: 4px solid rgb(161, 50, 154);
+  font-size: 1.1em;
+  margin-top: 5px;
+  margin-bottom: 5px;
+  text-align: left;
+}
+
+/* applies when screen is wide enough */ 
+@media (min-width: 700px) {
+  #inputTable {
+      font-size:1.0em;
+      /*max-width: 700px;*/
+  }
+}
+
+#videoRecordingMessageDiv{
+  background: rgba(0, 0, 0, 0.75);
+  color:white;
+  font-family: helvetica;
+  font-size: 20px;
+  font-weight: bold;
+  padding: 8px;
+}
+
+.sticky-bottom {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+}
+
+/*floating loading screen*/
+.lockOn {
+  display: block;
+  visibility: visible;
+  position: fixed;
+  z-index: 999;
+  top: 0px;
+  left: 0px;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(255, 255, 255, 0.25);
+  padding-top: 0%;
+  opacity: 0.9; 
+  font-size:large;
+  color:blue;
+  font-style:italic;
+  font-weight:400;
+  background-image: url(https://github.com/imageMageAge/imageMageAge.github.io/blob/main/images/loadingCircle.gif?raw=true);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  background-position: center;
+}
+
+/* Styling for table with github and social links */
+
+#infoMenuTable td {
+  text-align:center;
+  border: 0;
+  padding: 20px;
+}
+
+#infoMenuTable{
+  table-layout: fixed;
+  margin: 0px;
+}
+
+a, a:visited{
+  color:rgb(161, 50, 154);
+}
+
+.socialMediaButton{
+  color:rgb(161, 50, 154);
+  font-size: 26px;
+  margin: 0;
+  padding: 4px;
+  border: none;
+  max-width: 50px;
+  max-height: 50px;
+  background-color: transparent;
+}
+
+#buyMeACoffeeButton {
+  font-size: 10px;
 }

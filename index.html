@@ -6,23 +6,102 @@
     <title>Edge Detection Particle Animation</title>
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.7/dat.gui.min.js"></script>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap" rel="stylesheet">
+  
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  
+    <meta property="og:title" content="Video-to-ASCII-Art" />
+    <meta property="og:description" content="Turn videos into ASCII pixel art" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://collidingscopes.github.io/ascii/" />
+    <meta property="og:image" content="https://collidingscopes.github.io/ascii/assets/metro.png">
+    <meta property="og:image:type" content="image/png" >
+    <meta property="og:image:width" content="1280" >
+    <meta property="og:image:height" content="720" >
+  
+    <link rel="icon" href="assets/siteFavicon3.png">
+    <link rel="apple-touch-icon" href="assets/siteFavicon3.png">
+
 </head>
 <body>
-    <div id="controls">
-        <div class="input-group">
-            <input type="file" id="imageInput" accept="image/*">
-            <button id="restartBtn">Restart Animation</button>
-        </div>
+
+    <div id="gui"></div>
+    <div class="canvasDiv">
+      <canvas id="canvas"></canvas>
     </div>
-    <canvas id="canvas"></canvas>
     <img id="defaultImage" class="hidden" src="assets/face.webp"> 
 
-    <!-- Application Scripts -->
-    <script src="gl-state.js"></script>
-    <script src="resource-manager.js"></script>
-    <script src="webgl-utils.js"></script>
-    <script src="particles.js"></script>
-    <script src="main.js"></script>
+    <table id="buttonTable">
+      <tr>
+          <td>
+              <label for="imageInput" class="custom-file-upload" id="imageInputLabel">
+                  <i class="fa fa-cloud-upload"></i> Upload Image
+              </label>
+              <input type="file" id="imageInput" accept="image/*">
+          </td>
+
+          <td>
+              <button id="restartBtn">Restart Animation</button>
+          </td>
+      </tr>
+  </table>
+
+  <div id="videoRecordingMessageDiv" class="hidden sticky-bottom">
+      Video recording underway. Press menu button or "v" to stop. The video will be saved to your downloads folder afterwards.
+  </div>
+
+  <div id="notesDiv">
+      <div id="textBox">
+
+          <h2 id="aboutText">Particle Dissolve</h2>
+
+          <p>Turn videos into ASCII pixel art! Use your webcam feed or upload a video, then use the controls to adjust the colors, resolution, text style, etc...</p>
+          <p>You can create a video export to save and/or share your animation afterwards.</p>
+          <p>This tool is completely free, open source (MIT license), without any paywalls or premium options. You are welcome to use it for personal or commercial purposes.</p>
+          <p>If you found this tool useful, feel free to buy me a coffee. This would be much appreciated during late-night coding sessions!</p>
+          
+          <a href="https://www.buymeacoffee.com/stereoDrift" target="_blank"><img src="https://www.buymeacoffee.com/assets/img/custom_images/yellow_img.png" alt="Buy Me A Coffee"></a>
+
+          <p>The code used to create the animation is quite resource-intensive, so it may run with some lag if your computer doesn't have enough computing power, too many tabs open, low battery, etc.</p>
+          <p>If the video export feature does not work for you, please try a free screen-recording tool such as OBS Studio.</p>
+
+          <p>This project is coded using Javascript, HTML canvas, and CSS (see github repo linked below). Video creation and encoding is done using mp4 muxer.</p>
+          <p>I do not have access to any of the videos that you upload here, as all processing is done "client-side" (i.e., <b>no videos or images are saved/stored by me — they stay on your computer only</b>).</p>
+          <p>If you enjoyed this, you may be interested in my other free / open source projects:</p>
+          <ul>
+            <li><a href="https://collidingScopes.github.io/ascii" target="_blank" rel="noopener">Video-to-ASCII</a>: turn videos into ASCII pixel art</li>
+            <li><a href="https://collidingScopes.github.io/shimmer" target="_blank" rel="noopener">Shape Shimmer</a>: turn photos into funky wave animations</li>
+            <li><a href="https://collidingScopes.github.io" target="_blank" rel="noopener">Colliding Scopes</a>: turn photos into kaleidoscope animations</li>
+            <li><a href="https://collidingScopes.github.io/forcefield" target="_blank" rel="noopener">Force-Field Animation</a>: turn photos into particle animations</li>
+          </ul>
+          <p>Feel free to reach out to discuss, ask questions, or just to say hi! You can find me <a href="https://www.instagram.com/stereo.drift/" target="_blank" rel="noopener">@stereo.drift</a> on instagram, or through the other places below :)</p>
+      </div>
+  </div>
+
+  <div id="linksDiv">
+    <table id="infoMenuTable">
+        <tr>
+            <td><button id="gitHubButton"class="socialMediaButton"><a href="https://github.com/collidingScopes/manual-brick-breaker" target="_blank" rel="noopener"><i class="fa-brands fa-github"></i></a></button></td>
+            <td><button id="coffeeButton" class="socialMediaButton"><a href="https://www.buymeacoffee.com/stereoDrift" target="_blank" rel="noopener"><i class="fa-solid fa-heart"></i></a></button></td>
+            <td><button id="instagramButton" class="socialMediaButton"><a href="https://www.instagram.com/stereo.drift/" target="_blank" rel="noopener"><i class="fa-brands fa-instagram"></i></a></button></td>
+            <td><button id="xButton" class="socialMediaButton"><a class="x-link" href="https://x.com/measure_plan" target="_blank" rel="noopener">𝕏</i></a></button></td>
+            <td><button id="emailButton" class="socialMediaButton"><a href="mailto:stereodriftvisuals@gmail.com" target="_blank" rel="noopener"><i class="fa-solid fa-envelope"></i></a></button></td>
+        </tr>
+    </table>
+</div>
 
 </body>
+
+<!-- Application Scripts -->
+<script src="gl-state.js"></script>
+<script src="resource-manager.js"></script>
+<script src="webgl-utils.js"></script>
+<script src="particles.js"></script>
+<script src="main.js"></script>
+<script src="canvasVideoExport.js"></script>
+<script src="mp4-muxer-main/build/mp4-muxer.js"></script>
+
 </html>

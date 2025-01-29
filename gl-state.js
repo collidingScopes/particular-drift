@@ -125,14 +125,14 @@ class GLState {
   /**
    * Set clear color
    */
-  setClearColor(r, g, b, a) {
-      const color = [r, g, b, a];
-      if (JSON.stringify(this.currentState.clearColor) !== JSON.stringify(color)) {
-          this.gl.clearColor(r, g, b, a);
-          this.currentState.clearColor = color;
-          return true;
-      }
-      return false;
+  setClearColor(r, g, b, a = 1.0) {
+    const color = [r, g, b, a];
+    if (JSON.stringify(this.currentState.clearColor) !== JSON.stringify(color)) {
+        this.gl.clearColor(r, g, b, 1.0); // Force alpha to 1.0
+        this.currentState.clearColor = color;
+        return true;
+    }
+    return false;
   }
 
   /**
@@ -183,7 +183,16 @@ class GLState {
    * Clear the current framebuffer
    */
   clear(mask = this.gl.COLOR_BUFFER_BIT) {
-      this.gl.clear(mask);
+    // Ensure we're clearing with proper alpha
+    const currentColor = this.currentState.clearColor;
+    this.gl.clearColor(currentColor[0], currentColor[1], currentColor[2], 1.0);
+    
+    // Clear the buffer
+    this.gl.clear(mask);
+    
+    // Reset viewport to ensure full coverage
+    const viewport = this.currentState.viewport;
+    this.gl.viewport(viewport.x, viewport.y, viewport.width, viewport.height);
   }
 
   /**

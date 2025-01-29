@@ -17,7 +17,12 @@ Github readme -- get Claude to write it, including overview, installation instru
 site OG
 hotkeys
 Create image / video examples
+- Try it on logos, text, movie posters
 */
+
+let canvas;
+let imageInput = document.getElementById("imageInput");
+let imageInputLabel = document.getElementById("imageInputLabel");
 
 // Global state and managers
 let gl, glState, resourceManager;
@@ -48,6 +53,8 @@ let palettes =
 };
 
 // Configuration
+let gui = new dat.gui.GUI( { autoPlace: false } );
+let guiOpenToggle = false;
 const CONFIG = {
     edgeThreshold: { value: 0.4, min: 0.1, max: 1.5, step: 0.1 },
     particleSpeed: { value: 12.0, min: 2.0, max: 70.0, step: 0.5 },
@@ -62,7 +69,7 @@ const CONFIG = {
 };
 
 async function initWebGL() {
-    const canvas = document.getElementById('canvas');
+    canvas = document.getElementById('canvas');
     gl = canvas.getContext('webgl2');
     
     if (!gl) {
@@ -115,7 +122,6 @@ async function initWebGL() {
 }
 
 function initGUI() {
-    const gui = new dat.GUI();
     
     // Initialize controllers object
     window.guiControllers = {};
@@ -129,13 +135,9 @@ function initGUI() {
     CONFIG.selectedPalette = randomPaletteName;
     CONFIG.backgroundColor = randomBg;
     CONFIG.particleColor = randomParticle;
-    
-    // Create a folder for color settings
-    const colorFolder = gui.addFolder('Colors');
-    colorFolder.open(); // Open the colors folder by default
-    
+
     // Add palette selector
-    window.guiControllers.selectedPalette = colorFolder.add(CONFIG, 'selectedPalette', paletteNames)
+    window.guiControllers.selectedPalette = gui.add(CONFIG, 'selectedPalette', paletteNames)
         .name('Color Palette')
         .onChange(value => {
             const [bg, particle] = palettes[value];
@@ -149,11 +151,11 @@ function initGUI() {
         });
     
     // Add individual color controls
-    window.guiControllers.backgroundColor = colorFolder.addColor(CONFIG, 'backgroundColor')
+    window.guiControllers.backgroundColor = gui.addColor(CONFIG, 'backgroundColor')
         .name('Background')
         .onChange(v => updateConfig('backgroundColor', v));
-    
-    window.guiControllers.particleColor = colorFolder.addColor(CONFIG, 'particleColor')
+
+    window.guiControllers.particleColor = gui.addColor(CONFIG, 'particleColor')
         .name('Particles')
         .onChange(v => updateConfig('particleColor', v));
     
@@ -170,13 +172,31 @@ function initGUI() {
     gui.add({ togglePlayPause }, 'togglePlayPause').name('Pause/Play');
 
     // Add randomize button
-    gui.add({ randomize: randomizeInputs }, 'randomize').name('Randomize All');
+    gui.add({ randomize: randomizeInputs }, 'randomize').name('Randomize Inputs');
+
+    CONFIG['uploadImage'] = function () {
+      imageInput.click();
+    };
+    gui.add(CONFIG, 'uploadImage').name('Upload Image');
+    
+    CONFIG['saveImage'] = function () {
+      saveImage();
+    };
+    gui.add(CONFIG, 'saveImage').name("Save Image (s)");
+    
+    CONFIG['saveVideo'] = function () {
+      toggleVideoRecord();
+    };
+    gui.add(CONFIG, 'saveVideo').name("Video Export (v)");
+    
+    customContainer = document.getElementById('gui');
+    customContainer.appendChild(gui.domElement);
 }
 
 function setupEventListeners() {
   // Handle image upload
-  document.getElementById('imageInput').addEventListener('change', handleImageUpload);
-  
+  imageInput.addEventListener('change', handleImageUpload);
+    
   // Handle restart button
   document.getElementById('restartBtn').addEventListener('click', () => safeRestartAnimation());
   
@@ -285,13 +305,59 @@ function randomizeInputs() {
   }
 }
 
-function resizeCanvasToImage(image) {
-  const maxSize = Math.min(window.innerWidth, window.innerHeight) - 40;
-  const scale = Math.min(maxSize / image.width, maxSize / image.height);
+// Calculate dimensions that are divisible by 4 while maintaining aspect ratio
+function calculateDivisibleDimensions(width, height, maxSize) {
+  // Calculate initial scale to fit within maxSize
+  const scale = Math.min(maxSize / width, maxSize / height);
   
-  canvas.width = Math.round(image.width * scale);
-  canvas.height = Math.round(image.height * scale);
+  // Get initial scaled dimensions
+  let scaledWidth = Math.round(width * scale);
+  let scaledHeight = Math.round(height * scale);
+  
+  // Ensure dimensions are divisible by 4
+  scaledWidth = Math.floor(scaledWidth / 4) * 4;
+  scaledHeight = Math.floor(scaledHeight / 4) * 4;
+  
+  // Recalculate to maintain aspect ratio while ensuring both dimensions are divisible by 4
+  const aspectRatio = width / height;
+  
+  if (scaledWidth / scaledHeight > aspectRatio) {
+      // Height is the limiting factor
+      scaledHeight = Math.floor(scaledHeight / 4) * 4;
+      scaledWidth = Math.floor(scaledHeight * aspectRatio / 4) * 4;
+  } else {
+      // Width is the limiting factor
+      scaledWidth = Math.floor(scaledWidth / 4) * 4;
+      scaledHeight = Math.floor(scaledWidth / aspectRatio / 4) * 4;
+  }
+  
+  // Ensure we don't exceed maxSize
+  while (scaledWidth > maxSize || scaledHeight > maxSize) {
+      if (scaledWidth > maxSize) {
+          scaledWidth -= 4;
+          scaledHeight = Math.floor(scaledWidth / aspectRatio / 4) * 4;
+      }
+      if (scaledHeight > maxSize) {
+          scaledHeight -= 4;
+          scaledWidth = Math.floor(scaledHeight * aspectRatio / 4) * 4;
+      }
+  }
+  
+  return { width: scaledWidth, height: scaledHeight };
+}
+
+// Modified resizeCanvasToImage function
+function resizeCanvasToImage(image) {
+  console.log("Original image size: "+image.width+", "+image.height);
+  const maxSize = Math.min(window.innerWidth, window.innerHeight) - 40;
+  const dimensions = calculateDivisibleDimensions(image.width, image.height, maxSize);
+  
+  canvas.width = dimensions.width;
+  canvas.height = dimensions.height;
   glState.setViewport(0, 0, canvas.width, canvas.height);
+  
+  console.log("New image size: "+dimensions.width+", "+dimensions.height);
+  return dimensions;
 }
 
 async function handleImageUpload(e) {
@@ -334,7 +400,14 @@ function loadImage(file) {
 }
 
 function updateBackgroundColor() {
-  glState.setClearColor(...WebGLUtils.hexToRGB(CONFIG.backgroundColor), 1.0);
+  canvas.style.backgroundColor = CONFIG['backgroundColor'].valueOf;
+
+  // Always set alpha to 1.0 for full coverage
+  const [r, g, b] = WebGLUtils.hexToRGB(CONFIG.backgroundColor);
+  glState.setClearColor(r, g, b, 1.0);
+  
+  // Force an immediate clear to update the background
+  glState.clear();
 }
 
 function safeRestartAnimation() {
@@ -407,26 +480,29 @@ function stopAnimation() {
 }
 
 function animate(currentTime) {
+  drawScene(currentTime);
+  if (isAnimating && CONFIG.IS_PLAYING) {
+    animationFrameId = requestAnimationFrame(animate);
+  }
+}
+
+function drawScene(currentTime){
   if (!particleSystem || isRestarting) {
-      isAnimating = false;
-      return;
+    isAnimating = false;
+    return;
   }
 
   const deltaTime = lastTime ? currentTime - lastTime : 0;
   lastTime = currentTime;
-  
+
   try {
-      glState.clear();
-      particleSystem.update(deltaTime);
-      particleSystem.render();
-      
-      if (isAnimating && CONFIG.IS_PLAYING) {
-          animationFrameId = requestAnimationFrame(animate);
-      }
-  } catch (error) {
-      console.error('Animation error:', error);
-      stopAnimation();
-      safeRestartAnimation();
+    glState.clear();
+    particleSystem.update(deltaTime);
+    particleSystem.render();
+  }catch (error) {
+    console.error('Animation error:', error);
+    stopAnimation();
+    safeRestartAnimation();
   }
 }
 
