@@ -1,13 +1,9 @@
 /*
 To do:
-Creation / destruction should ebb and flow more (one part of the image creating / one part destroying at all times)
-Adjust palettes / add more natural looking palettes
 Choose and use a random default image upon startup (3 different choices?)
-Toggle for different noise modes (perlin, simplex, other flow field types, etc.)
-Export image / video from canvas
-Improve UI (check ASCII / past projects)
 Mobile testing
 project naming
+Toggle for different noise and flow field modes (perlin, simplex, other flow field types, etc.)
 User control / modification of flow field
 Add [x] other particles onto the canvas which have a different color and aren't attracted to edges (only follow flow field)
 Button to show the original image underneath?
@@ -56,12 +52,12 @@ let palettes =
 let gui = new dat.gui.GUI( { autoPlace: false } );
 let guiOpenToggle = false;
 const CONFIG = {
-    edgeThreshold: { value: 0.4, min: 0.1, max: 1.5, step: 0.1 },
     particleSpeed: { value: 12.0, min: 2.0, max: 70.0, step: 0.5 },
     attractionStrength: { value: 85.0, min: 1.0, max: 200.0, step: 1.0 },
     particleOpacity: { value: 0.2, min: 0.05, max: 1.0, step: 0.05 },
     particleSize: { value: 0.8, min: 0.3, max: 1.5, step: 0.1 },
     particleCount: { value: 300000, min: 200000, max: 700000, step: 1000 },
+    edgeThreshold: { value: 0.4, min: 0.1, max: 1.5, step: 0.1 },
     selectedPalette: 'galaxy',
     backgroundColor: '#0f0d2e',
     particleColor: '#dda290',
@@ -169,15 +165,15 @@ function initGUI() {
     });
 
     // Add play/pause button
-    gui.add({ togglePlayPause }, 'togglePlayPause').name('Pause/Play');
+    gui.add({ togglePlayPause }, 'togglePlayPause').name('Pause/Play (space)');
 
     // Add randomize button
-    gui.add({ randomize: randomizeInputs }, 'randomize').name('Randomize Inputs');
+    gui.add({ randomize: randomizeInputs }, 'randomize').name('Randomize Inputs (r)');
 
     CONFIG['uploadImage'] = function () {
       imageInput.click();
     };
-    gui.add(CONFIG, 'uploadImage').name('Upload Image');
+    gui.add(CONFIG, 'uploadImage').name('Upload Image (u)');
     
     CONFIG['saveImage'] = function () {
       saveImage();
@@ -194,18 +190,28 @@ function initGUI() {
 }
 
 function setupEventListeners() {
-  // Handle image upload
   imageInput.addEventListener('change', handleImageUpload);
-    
-  // Handle restart button
   document.getElementById('restartBtn').addEventListener('click', () => safeRestartAnimation());
-  
-  // Add keyboard shortcut for play/pause (spacebar)
-  document.addEventListener('keydown', (e) => {
-      if (e.code === 'Space' && currentImage) {
-          e.preventDefault(); // Prevent page scroll
-          togglePlayPause();
-      }
+  document.getElementById('randomizeBtn').addEventListener('click', () => randomizeInputs());
+
+  //shortcut hotkey presses
+  document.addEventListener('keydown', function(event) {
+    
+    if (event.key === 's') {
+        saveImage();
+    } else if (event.key === 'v') {
+        toggleVideoRecord();
+    } else if (event.code === 'Space') {
+      event.preventDefault();
+      togglePlayPause();
+    } else if(event.key === 'Enter'){
+      safeRestartAnimation();
+    } else if(event.key === 'r'){
+      randomizeInputs();
+    } else if(event.key === 'u'){
+      imageInput.click();
+    }
+    
   });
 
   // Cleanup on page unload

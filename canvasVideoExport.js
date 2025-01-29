@@ -30,7 +30,7 @@ var videoEncoder;
 var muxer;
 var mobileRecorder;
 var videofps = 30;
-let bitrate = 32_000_000;
+let bitrate = 16_000_000;
 
 function saveImage() {
   console.log("Export png image");
@@ -50,13 +50,12 @@ function saveImage() {
   tempContext.fillStyle = CONFIG.backgroundColor; 
   tempContext.fillRect(0, 0, canvas.width, canvas.height);
 
-  // Force a render frame to ensure latest content
-  gl.flush();
-  gl.finish();
-
   // Draw the WebGL canvas on top
   tempContext.globalCompositeOperation = 'source-over';
   drawScene(lastTime);
+  // Force a render frame to ensure latest content
+  gl.flush();
+  gl.finish();
   tempContext.drawImage(canvas, 0, 0);
 
   // Create download link

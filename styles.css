@@ -23,7 +23,7 @@ html, body{
 .close-button {
   font-size: 1.2em;
   font-weight: bold;
-  background-color: rgb(99, 9, 64) !important;
+  background-color: #630940 !important;
 }
 /*
 .dg {
@@ -52,6 +52,27 @@ html, body{
   box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
   max-width: calc(100vw - 20px);
   max-height: calc(100vh - 80px);
+}
+
+.menuButton {
+  font-size: 1.6em;
+}
+
+button {
+  padding: 2px;
+  font-weight: bold;
+  /* font-size: 1em; */
+
+  margin: 10px 3px 10px 3px;
+  /*margin-left: 3px;
+  margin-right: 3px;*/
+
+  /* border: 3px solid #79e2d2; */
+  border: 1px solid #ffffff;
+  border-radius: 6px;
+  background-color: #630940;
+
+  cursor: pointer;
 }
 
 #introDiv{
@@ -85,8 +106,8 @@ html, body{
 }
 
 #aboutText{
-  font-size: 32px;
-  font-family: "Permanent Marker";
+  font-size: 52px;
+  font-family: "Kage Retro";
   font-weight: 400;
   font-style: normal;
   display:block;
@@ -106,8 +127,6 @@ html, body{
   background-color: #151632;
   color: white;
 }
-
-
 
 #textBox {
   min-width: 350px;
@@ -169,10 +188,10 @@ input[type="file"] {
 .custom-file-upload {
   border: 1px solid #ccc;
   border-radius: 6px;
-  background-color: #226f63;
+  background-color: #630940;
   color: #fff;
   font-weight: bold;
-  font-size: 1em;
+  font-size: 1.2em;
   font-family: Helvetica;
   display: inline-block;
   padding: 8px;
@@ -192,22 +211,6 @@ input[type="color"] {
 input[type="checkbox"] {
   min-width: 20px;
   min-height: 20px;
-}
-
-button {
-  padding: 6px;
-  font-weight: bold;
-  font-size: 1em;
-
-  margin: 10px 3px 10px 3px;
-  /*margin-left: 3px;
-  margin-right: 3px;*/
-
-  border: 3px solid #79e2d2;
-  border-radius: 6px;
-  background-color: #ffffff;
-
-  cursor: pointer;
 }
 
 .tableText{
