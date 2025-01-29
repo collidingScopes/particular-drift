@@ -34,25 +34,29 @@
     <table id="buttonTable">
       <tr>
           <td>
-              <label for="imageInput" class="custom-file-upload" id="imageInputLabel">
-                  <i class="fa fa-cloud-upload"></i> Upload Image
-              </label>
-              <input type="file" id="imageInput" accept="image/*">
+            <button id="randomizeBtn" class="menuButton" title="Randomize Inputs">🎲</button>
           </td>
 
           <td>
-            <button id="randomizeBtn" class="menuButton">🎲</button>
+              <button id="restartBtn" class="menuButton" title="Restart Animation">🔄</button>
           </td>
 
           <td>
-              <button id="restartBtn" class="menuButton">🔄</button>
+            <label for="imageInput" class="custom-file-upload" id="imageInputLabel" title="Upload Image">
+                <i class="fa fa-cloud-upload"></i> Upload Image
+            </label>
+            <input type="file" id="imageInput" accept="image/*">
           </td>
 
+          <td>
+            <button id="exportVideoBtn" class="menuButton" title="Export Video">🎥</button>
+          </td>
+          
       </tr>
   </table>
 
-  <div id="videoRecordingMessageDiv" class="hidden sticky-bottom">
-      Video recording underway. Press menu button or "v" to stop. The video will be saved to your downloads folder afterwards.
+  <div id="videoRecordingMessageDiv" class="hidden sticky-top">
+      Video recording underway. Press menu button or "v" to stop. The video will save to your downloads folder after.
   </div>
 
   <div id="notesDiv">

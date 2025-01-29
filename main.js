@@ -2,16 +2,10 @@
 To do:
 Choose and use a random default image upon startup (3 different choices?)
 Mobile testing
-project naming
 Toggle for different noise and flow field modes (perlin, simplex, other flow field types, etc.)
 User control / modification of flow field
 Add [x] other particles onto the canvas which have a different color and aren't attracted to edges (only follow flow field)
 Button to show the original image underneath?
-Footer / about info
-Describe each variable and what it does
-Github readme -- get Claude to write it, including overview, installation instructions, parameter descriptions, etc.
-site OG
-hotkeys
 Create image / video examples
 - Try it on logos, text, movie posters
 */
@@ -193,6 +187,7 @@ function setupEventListeners() {
   imageInput.addEventListener('change', handleImageUpload);
   document.getElementById('restartBtn').addEventListener('click', () => safeRestartAnimation());
   document.getElementById('randomizeBtn').addEventListener('click', () => randomizeInputs());
+  document.getElementById('exportVideoBtn').addEventListener('click', () => toggleVideoRecord());
 
   //shortcut hotkey presses
   document.addEventListener('keydown', function(event) {

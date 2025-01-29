@@ -59,20 +59,17 @@ html, body{
 }
 
 button {
-  padding: 2px;
+  padding: 0px 2px 2px 2px;
   font-weight: bold;
-  /* font-size: 1em; */
-
   margin: 10px 3px 10px 3px;
-  /*margin-left: 3px;
-  margin-right: 3px;*/
-
-  /* border: 3px solid #79e2d2; */
-  border: 1px solid #ffffff;
+  border: 1px solid #cb0b81;
   border-radius: 6px;
   background-color: #630940;
-
   cursor: pointer;
+}
+
+button:hover {
+  background-color: #cb0b81;
 }
 
 #introDiv{
@@ -186,7 +183,7 @@ input[type="file"] {
   top:-9999px;
 }
 .custom-file-upload {
-  border: 1px solid #ccc;
+  border: 1px solid #cb0b81;
   border-radius: 6px;
   background-color: #630940;
   color: #fff;
@@ -198,6 +195,10 @@ input[type="file"] {
   cursor: pointer;
   margin-left: 3px;
   margin-right: 2px;
+}
+
+.custom-file-upload:hover {
+  background-color: #cb0b81;
 }
 
 /* Styling for color inputs */
@@ -280,11 +281,19 @@ td {
   font-size: 20px;
   font-weight: bold;
   padding: 8px;
+  text-align: center;
 }
 
 .sticky-bottom {
   position: fixed;
   bottom: 0;
+  left: 0;
+  width: 100%;
+}
+
+.sticky-top {
+  position: fixed;
+  top: 0;
   left: 0;
   width: 100%;
 }
