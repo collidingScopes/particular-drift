@@ -6,7 +6,7 @@ Turn images into flowing particle animations! This javascript / WebGL tool creat
 
 ## Live Demo
 
-Try it out at: [https://collidingscopes.github.io/particular-drift/](https://collidingscopes.github.io/particular-drift/)
+Try it out at: [**https://particular-drift.netlify.app**](https://particular-drift.netlify.app)
 
 ## Features
 

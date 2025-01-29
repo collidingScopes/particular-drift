@@ -83,7 +83,9 @@ function toggleVideoRecord(){
 }
 
 function chooseRecordingFunction(){
-if(isIOS || isAndroid || isFirefox){
+  safeRestartAnimation();
+
+  if(isIOS || isAndroid || isFirefox){
     startMobileRecording();
 }else {
     recordVideoMuxer();
@@ -104,7 +106,6 @@ if(isIOS || isAndroid || isFirefox){
 //source: https://devtails.xyz/adam/how-to-save-html-canvas-to-mp4-using-web-codecs-api
 async function recordVideoMuxer() {
 console.log("start muxer video recording");
-safeRestartAnimation();
 
 var videoWidth = Math.floor(canvas.width/2)*2;
 var videoHeight = Math.floor(canvas.height/4)*4; //force a number which is divisible by 4
@@ -258,6 +259,7 @@ setTimeout(function() {
 function finalizeMobileVideo(e) {
 setTimeout(function(){
     console.log("finish simple video recording");
+    togglePlayPause();
     recordVideoState = false;
     /*
     mobileRecorder.stop();*/
@@ -267,6 +269,7 @@ setTimeout(function(){
     
     //hide user message
     recordingMessageDiv.classList.add("hidden");
+    togglePlayPause();
 
 },500);
 }

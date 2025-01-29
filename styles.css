@@ -7,6 +7,8 @@ html, body{
   padding: 0;
   position: absolute;
   background-color: #151632;
+  width: 100%;
+  overflow-x: hidden;
 }
 
 #gui {
@@ -52,6 +54,10 @@ html, body{
   box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
   max-width: calc(100vw - 20px);
   max-height: calc(100vh - 80px);
+}
+
+#defaultImage {
+  max-width: calc(100vw - 20px);
 }
 
 .menuButton {

@@ -44,6 +44,7 @@ let palettes =
 
 // Configuration
 let gui = new dat.gui.GUI( { autoPlace: false } );
+gui.close();
 let guiOpenToggle = false;
 const CONFIG = {
     particleSpeed: { value: 12.0, min: 2.0, max: 70.0, step: 0.5 },
