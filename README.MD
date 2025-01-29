@@ -111,6 +111,7 @@ Check out my other free/open source projects:
 - [Shape Shimmer](https://collidingScopes.github.io/shimmer): Turn photos into funky wave animations
 - [Colliding Scopes](https://collidingScopes.github.io): Turn photos into kaleidoscope animations
 - [Force-Field Animation](https://collidingScopes.github.io/forcefield): Turn photos into particle animations
+- [Manual Brick Breaker](https://manual-brick-breaker.netlify.app): Play brick breaker by waving around your hands
 
 ## Donations
 If you found this tool useful, feel free to buy me a coffee. This would be much appreciated during late-night coding sessions!
