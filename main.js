@@ -2,14 +2,15 @@
 To do:
 Creation / destruction should ebb and flow more (one part of the image creating / one part destroying at all times)
 Adjust palettes / add more natural looking palettes
-Choose and use a random palette upon startup
+Choose and use a random default image upon startup (3 different choices?)
 Toggle for different noise modes (perlin, simplex, other flow field types, etc.)
 Export image / video from canvas
 Improve UI (check ASCII / past projects)
 Mobile testing
 project naming
 User control / modification of flow field
-Show the original image underneath?
+Add [x] other particles onto the canvas which have a different color and aren't attracted to edges (only follow flow field)
+Button to show the original image underneath?
 Footer / about info
 Describe each variable and what it does
 Github readme -- get Claude to write it, including overview, installation instructions, parameter descriptions, etc.
@@ -30,33 +31,33 @@ let isRestarting = false;
 let palettes =
 {
   noir: ["#000000", "#FFFFFF"],
-  crimson: ["#5B1A18", "#FD6467"],
+  crimson: ["#300907", "#f49092"],
   sea: ["#2f5575", "#94f0dc"],
   cherry: ["#f1faee", "#e63946"],
-  violet: ["#e0c3fc", "#4d194d"],
-  lakers: ["#652EC7", "#FFD300"],
-  tangerine: ["#B2FAFF", "#FF9472"],
-  vapor: ["#C6FFF1", "#FF36AB"],
-  retro: ["#f6d166", "#df2d2d"],
-  analog: ["#1A1831", "#5bada6"],
-  primary: ["#FFFF00", "#0000FF"],
-  euphoria: ["#361944", "#86BFE7"],
-  emerald: ["#02190C", "#900C3F"],
-  slate: ["#141415", "#9F978D"],
+  maroon: ["#360b1a", "#f6e3c7"],
+  lakers: ["#2f0f5b", "#ffe35a"],
+  copper: ["#2b1404", "#fec9b9"],
+  foam: ["#780C28", "#EAFAEA"],
+  retro: ["#feda62", "#8f1414"],
+  galaxy: ["#0f0d2e", "#dda290"],
+  ink: ["#441752", "#EFB6C8"],
+  blackberry: ["#21062b", "#e78686"],
+  emerald: ["#00261f", "#95e5bd"],
+  slate: ["#ddc1a1", "#1c1c1c"],
   sakura: ["#FFB3A7", "#C93756"],
 };
 
 // Configuration
 const CONFIG = {
-    particleCount: { value: 300000, min: 200000, max: 700000, step: 1000 },
     edgeThreshold: { value: 0.4, min: 0.1, max: 1.5, step: 0.1 },
     particleSpeed: { value: 12.0, min: 2.0, max: 70.0, step: 0.5 },
     attractionStrength: { value: 85.0, min: 1.0, max: 200.0, step: 1.0 },
     particleOpacity: { value: 0.2, min: 0.05, max: 1.0, step: 0.05 },
     particleSize: { value: 0.8, min: 0.3, max: 1.5, step: 0.1 },
-    selectedPalette: 'analog',
-    backgroundColor: '#1A1831',
-    particleColor: '#5bada6',
+    particleCount: { value: 300000, min: 200000, max: 700000, step: 1000 },
+    selectedPalette: 'galaxy',
+    backgroundColor: '#0f0d2e',
+    particleColor: '#dda290',
     IS_PLAYING: true
 };
 
@@ -118,13 +119,22 @@ function initGUI() {
     
     // Initialize controllers object
     window.guiControllers = {};
+
+    // Randomly select an initial palette
+    const paletteNames = Object.keys(palettes);
+    const randomPaletteName = paletteNames[Math.floor(Math.random() * paletteNames.length)];
+    const [randomBg, randomParticle] = palettes[randomPaletteName];
+    
+    // Update CONFIG with random palette
+    CONFIG.selectedPalette = randomPaletteName;
+    CONFIG.backgroundColor = randomBg;
+    CONFIG.particleColor = randomParticle;
     
     // Create a folder for color settings
     const colorFolder = gui.addFolder('Colors');
     colorFolder.open(); // Open the colors folder by default
     
     // Add palette selector
-    const paletteNames = Object.keys(palettes);
     window.guiControllers.selectedPalette = colorFolder.add(CONFIG, 'selectedPalette', paletteNames)
         .name('Color Palette')
         .onChange(value => {
