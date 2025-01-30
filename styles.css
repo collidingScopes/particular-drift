@@ -61,10 +61,6 @@ html, body{
 }
 
 .menuButton {
-  font-size: 1.6em;
-}
-
-button {
   padding: 0px 2px 2px 2px;
   font-weight: bold;
   margin: 8px 2px 8px 2px;
@@ -72,9 +68,10 @@ button {
   border-radius: 6px;
   background-color: #630940;
   cursor: pointer;
+  font-size: 1.6em;
 }
 
-button:hover {
+.menuButton:hover {
   background-color: #cb0b81;
 }
 

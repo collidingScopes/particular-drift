@@ -24,7 +24,7 @@ Try it out at: [**https://particular-drift.netlify.app**](https://particular-dri
 The animation combines several techniques:
 
 - **Edge Detection** using Sobel filters
-- **Perlin Noise** for generating organic flow fields
+- **Perlin / Simplex Noise** for generating organic flow fields (2D or 3D)
 - **WebGL** for high-performance GPU-accelerated rendering
 - **GLSL Shaders** for particle physics and rendering
 - **Transform Feedback** for efficient particle system updates
@@ -40,6 +40,7 @@ Users can control various aspects of the animation:
 - **Particle Count**: Sets the total number of particles in the system
 - **Edge Threshold**: Controls the sensitivity of edge detection
 - **Flow Field Scale**: Complexity of the flow field 
+- **Noise Type**: Select 2D perlin noise or 3D simplex noise for the flow field movement
 - **Color Palette**: Choose from preset color combinations or customize your own
 - **Background Color**: Set the background color
 - **Particle Color**: Set the color of the particles

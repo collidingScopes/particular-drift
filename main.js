@@ -1,17 +1,18 @@
 /*
 To do:
+Allow user to create / save parameter presets
 Choose and use a random default image upon startup (3 different choices?)
 Toggle for different noise and flow field modes (perlin, simplex, other flow field types, etc.)
 User control / modification of flow field
 Add [x] other particles onto the canvas which have a different color and aren't attracted to edges (only follow flow field)
 Button to show the original image underneath?
 Create more image / video examples
-- Try it on logos, text, movie posters, flowers
+- Try it on logos, text, movie posters
+Add warning to the page upon startup if webgl load fails (ask user to try on Desktop Chrome instead)
 */
 
 let canvas;
 let imageInput = document.getElementById("imageInput");
-let imageInputLabel = document.getElementById("imageInputLabel");
 
 // Global state and managers
 let gl, glState, resourceManager;
@@ -53,7 +54,8 @@ const CONFIG = {
     particleOpacity: { value: 0.2, min: 0.05, max: 1.0, step: 0.05 },
     particleSize: { value: 0.8, min: 0.3, max: 1.5, step: 0.1 },
     particleCount: { value: 300000, min: 200000, max: 600000, step: 1000 },
-    edgeThreshold: { value: 0.4, min: 0.1, max: 1.5, step: 0.1 },
+    edgeThreshold: { value: 0.4, min: 0.1, max: 1.5, step: 0.05 },
+    noiseType: '2D',
     flowFieldScale: { value: 4.0, min: 1.0, max: 10.0, step: 1.0 },
     selectedPalette: 'galaxy',
     backgroundColor: '#0f0d2e',
@@ -151,6 +153,13 @@ function initGUI() {
                 .name(key.replace(/_/g, ' '))
                 .onChange(v => updateConfig(key, v));
         }
+    });
+
+    // Add noise type selector
+    window.guiControllers.noiseType = gui.add(CONFIG, 'noiseType', ['2D', '3D'])
+    .name('Noise Type')
+    .onChange(value => {
+        updateConfig('noiseType', value);
     });
 
     // Add play/pause button
@@ -290,6 +299,12 @@ function randomizeInputs() {
   CONFIG.selectedPalette = randomPaletteKey;
   CONFIG.backgroundColor = newBgColor;
   CONFIG.particleColor = newParticleColor;
+
+  // Randomly choose noise type
+  CONFIG.noiseType = Math.random() < 0.5 ? '2D' : '3D';
+  if (window.guiControllers.noiseType) {
+      window.guiControllers.noiseType.setValue(CONFIG.noiseType);
+  }
   
   // Randomize other parameters
   Object.entries(CONFIG).forEach(([key, value]) => {
