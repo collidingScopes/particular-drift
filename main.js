@@ -2,12 +2,8 @@
 To do:
 Allow user to create / save parameter presets
 Choose and use a random default image upon startup (3 different choices?)
-Toggle for different noise and flow field modes (perlin, simplex, other flow field types, etc.)
-User control / modification of flow field
 Add [x] other particles onto the canvas which have a different color and aren't attracted to edges (only follow flow field)
 Button to show the original image underneath?
-Create more image / video examples
-- Try it on logos, text, movie posters
 Add warning to the page upon startup if webgl load fails (ask user to try on Desktop Chrome instead)
 */
 
