@@ -34,7 +34,11 @@
     <table id="buttonTable">
       <tr>
           <td>
-            <button id="randomizeBtn" class="menuButton" title="Randomize Inputs">🎲</button>
+            <button id="randomizeBtn" class="menuButton" title="Randomize All Inputs">🎲</button>
+          </td>
+
+          <td>
+            <button id="randomizeColorBtn" class="menuButton" title="Randomize Colors">🎨</button>
           </td>
 
           <td>
@@ -62,13 +66,16 @@
   <div id="notesDiv">
       <div id="textBox">
 
-          <h2 id="aboutText">Particular Drift</h2>
+          <h2 id="aboutText">Particular Drift ༄</h2>
 
-          <p>Turn images into flowing particle animations! Upload an image, then use the controls to adjust the colors, particle speed, attraction strength, edge detection threshold, and more...</p>
+          <p>Turn images into flowing particle animations! Upload an image, then use the controls to adjust the colors, particle speed, attraction strength, edge detection threshold, flow field movement, and more...</p>
+          <p>Click the 🎲 button underneath the canvas to randomize all input parameters, this can give interesting colour / movement styles. You can then open the controls at the top right of the screen to fine-tune the parameters one-by-one.</p>
+          <p>Increasing the attraction strength will make the particles stick to the edges, while increasing the particle speed will cause the partiles to become unstuck and flow around the canvas freely.</p>
           <p>You can export your creation as an image or video afterwards.</p>
           <p>A few hotkeys for the pros:</p>
           <ul>
             <li>[r]: randomize all inputs (useful to find interesting parameters for a new image)</li>
+            <li>[c]: choose random color palette</li>
             <li>[space]: pause/play the animation</li>
             <li>[enter]: restart the animation</li>
             <li>[v]: start and stop video export</li>

@@ -1,13 +1,12 @@
 /*
 To do:
 Choose and use a random default image upon startup (3 different choices?)
-Mobile testing
 Toggle for different noise and flow field modes (perlin, simplex, other flow field types, etc.)
 User control / modification of flow field
 Add [x] other particles onto the canvas which have a different color and aren't attracted to edges (only follow flow field)
 Button to show the original image underneath?
-Create image / video examples
-- Try it on logos, text, movie posters
+Create more image / video examples
+- Try it on logos, text, movie posters, flowers
 */
 
 let canvas;
@@ -40,19 +39,22 @@ let palettes =
   emerald: ["#00261f", "#95e5bd"],
   slate: ["#ddc1a1", "#1c1c1c"],
   sakura: ["#FFB3A7", "#C93756"],
+  indigo: ["#22117c", "#EAFAEA"],
 };
+const paletteNames = Object.keys(palettes);
 
 // Configuration
 let gui = new dat.gui.GUI( { autoPlace: false } );
 gui.close();
 let guiOpenToggle = false;
 const CONFIG = {
-    particleSpeed: { value: 12.0, min: 2.0, max: 70.0, step: 0.5 },
+    particleSpeed: { value: 12.0, min: 2.0, max: 80.0, step: 0.5 },
     attractionStrength: { value: 85.0, min: 1.0, max: 200.0, step: 1.0 },
     particleOpacity: { value: 0.2, min: 0.05, max: 1.0, step: 0.05 },
     particleSize: { value: 0.8, min: 0.3, max: 1.5, step: 0.1 },
-    particleCount: { value: 300000, min: 200000, max: 700000, step: 1000 },
+    particleCount: { value: 300000, min: 200000, max: 600000, step: 1000 },
     edgeThreshold: { value: 0.4, min: 0.1, max: 1.5, step: 0.1 },
+    flowFieldScale: { value: 4.0, min: 1.0, max: 10.0, step: 1.0 },
     selectedPalette: 'galaxy',
     backgroundColor: '#0f0d2e',
     particleColor: '#dda290',
@@ -117,15 +119,7 @@ function initGUI() {
     // Initialize controllers object
     window.guiControllers = {};
 
-    // Randomly select an initial palette
-    const paletteNames = Object.keys(palettes);
-    const randomPaletteName = paletteNames[Math.floor(Math.random() * paletteNames.length)];
-    const [randomBg, randomParticle] = palettes[randomPaletteName];
-    
-    // Update CONFIG with random palette
-    CONFIG.selectedPalette = randomPaletteName;
-    CONFIG.backgroundColor = randomBg;
-    CONFIG.particleColor = randomParticle;
+    chooseRandomPalette();
 
     // Add palette selector
     window.guiControllers.selectedPalette = gui.add(CONFIG, 'selectedPalette', paletteNames)
@@ -184,9 +178,35 @@ function initGUI() {
     customContainer.appendChild(gui.domElement);
 }
 
+function chooseRandomPalette(){
+  // Randomly select an initial palette
+  const randomPaletteName = paletteNames[Math.floor(Math.random() * paletteNames.length)];
+  const [randomBg, randomParticle] = palettes[randomPaletteName];
+  
+  // Update CONFIG with random palette
+  CONFIG.selectedPalette = randomPaletteName;
+  CONFIG.backgroundColor = randomBg;
+  CONFIG.particleColor = randomParticle;
+
+  // Update GUI controllers
+  if (window.guiControllers.selectedPalette) {
+    window.guiControllers.selectedPalette.setValue(randomPaletteName);
+  }
+  if (window.guiControllers.backgroundColor) {
+    window.guiControllers.backgroundColor.setValue(randomBg);
+  }
+  if (window.guiControllers.particleColor) {
+    window.guiControllers.particleColor.setValue(randomParticle);
+  }
+
+  updateBackgroundColor();
+
+}
+
 function setupEventListeners() {
   imageInput.addEventListener('change', handleImageUpload);
   document.getElementById('restartBtn').addEventListener('click', () => safeRestartAnimation());
+  document.getElementById('randomizeColorBtn').addEventListener('click', () => chooseRandomPalette());
   document.getElementById('randomizeBtn').addEventListener('click', () => randomizeInputs());
   document.getElementById('exportVideoBtn').addEventListener('click', () => toggleVideoRecord());
 
@@ -206,6 +226,8 @@ function setupEventListeners() {
       randomizeInputs();
     } else if(event.key === 'u'){
       imageInput.click();
+    } else if(event.key === 'c'){
+      chooseRandomPalette();
     }
     
   });
@@ -282,10 +304,10 @@ function randomizeInputs() {
   });
 
   //set attractionStrength based on randomly chosen particleSpeed
-  //ratio vs. max value can be -20% to +40% vs. the value of the particleSpeed
+  //ratio vs. max value can be -30% to +40% vs. the value of the particleSpeed
   let speedRatio = CONFIG['particleSpeed'].value / CONFIG['particleSpeed'].max;
-  let ratioAdjustment = (Math.random()*0.6 - 0.2);
-  let attractionStrengthValue = CONFIG['attractionStrength'].max * (speedRatio+ratioAdjustment);
+  let ratioAdjustment = (Math.random()*0.7 - 0.3);
+  let attractionStrengthValue = CONFIG['attractionStrength'].max * Math.min(speedRatio+ratioAdjustment,1);
   CONFIG['attractionStrength'].value = attractionStrengthValue;
   window.guiControllers['attractionStrength'].setValue(attractionStrengthValue);
 

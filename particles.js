@@ -35,6 +35,7 @@ class ParticleSystem {
               attractionStrength: gl.getUniformLocation(this.updateProgram, 'attractionStrength'),
               time: gl.getUniformLocation(this.updateProgram, 'time'),
               noiseSeed: gl.getUniformLocation(this.updateProgram, 'noiseSeed'),
+              flowFieldScale: gl.getUniformLocation(this.updateProgram, 'flowFieldScale'),
           },
           edge: {
               resolution: gl.getUniformLocation(this.edgeProgram, 'uResolution'),
@@ -231,6 +232,7 @@ class ParticleSystem {
       gl.uniform1f(this.uniforms.update.particleSpeed, CONFIG.particleSpeed.value);
       gl.uniform1f(this.uniforms.update.attractionStrength, CONFIG.attractionStrength.value);
       gl.uniform1f(this.uniforms.update.noiseSeed, this.noiseSeed);
+      gl.uniform1f(this.uniforms.update.flowFieldScale, CONFIG.flowFieldScale.value);
 
       // Set up transform feedback
       glState.bindVAO(this.vaos[this.currentIndex]);

@@ -21,6 +21,7 @@ uniform float searchRadius;         // Radius for searching nearby edges
 uniform float attractionStrength;   // Strength of edge attraction
 uniform float time;                 // Global time for animation
 uniform float noiseSeed;            // Random seed for Perlin noise
+uniform float flowFieldScale;      // Scale factor for the flow field
 
 /**
  * Generate a pseudo-random number in range [0,1] based on a 2D coordinate
@@ -74,7 +75,7 @@ float perlinNoise(vec2 p) {
  * @return vec2 - Direction vector for the flow field
  */
 vec2 flowField(vec2 position, float time) {
-    float scale = 4.0;  // Controls the spatial frequency of the field
+    float scale = flowFieldScale;  // Controls the spatial frequency of the field
     vec2 scaledPos = position * scale;
     
     // Sample Perlin noise at offset positions for x and y components

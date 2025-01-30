@@ -3,6 +3,7 @@
 Turn images into flowing particle animations! This javascript / WebGL tool creates particle animations from any image, with particles that dynamically respond to edge detection and flow fields.
 
 <img src="/assets/example.gif">
+<img src="/assets/onEdge.png">
 
 ## Live Demo
 
@@ -38,6 +39,7 @@ Users can control various aspects of the animation:
 - **Particle Size**: Adjusts the size of each particle
 - **Particle Count**: Sets the total number of particles in the system
 - **Edge Threshold**: Controls the sensitivity of edge detection
+- **Flow Field Scale**: Complexity of the flow field 
 - **Color Palette**: Choose from preset color combinations or customize your own
 - **Background Color**: Set the background color
 - **Particle Color**: Set the color of the particles
@@ -59,15 +61,6 @@ Users can control various aspects of the animation:
    ```
 
 3. Open your browser and navigate to the local server address (typically `http://localhost:8000`)
-
-## Keyboard Shortcuts
-
-- `[r]`: Randomize all inputs
-- `[space]`: Pause/play the animation
-- `[enter]`: Restart the animation
-- `[v]`: Start and stop video export
-- `[s]`: Save a screenshot image
-- `[u]`: Upload new image
 
 ## Browser Requirements
 
