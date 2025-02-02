@@ -60,56 +60,56 @@ const CONFIG = {
 };
 
 async function initWebGL() {
-    canvas = document.getElementById('canvas');
-    gl = canvas.getContext('webgl2');
-    
-    if (!gl) {
-        alert('WebGL 2 not supported');
-        throw new Error('WebGL 2 not supported');
-    }
+  canvas = document.getElementById('canvas');
+  gl = canvas.getContext('webgl2');
+  
+  if (!gl) {
+      alert('WebGL 2 not supported');
+      throw new Error('WebGL 2 not supported');
+  }
 
-    // Enable required extensions
-    const requiredExtensions = ['EXT_color_buffer_float', 'OES_texture_float_linear'];
-    for (const ext of requiredExtensions) {
-        if (!gl.getExtension(ext)) {
-            alert(`Required extension ${ext} not supported`);
-            throw new Error(`Required extension ${ext} not supported`);
-        }
-    }
+  // Initialize texture configuration
+  const textureConfig = new TextureConfig(gl);
+  
+  // Enable color buffer float extension if available
+  const ext = gl.getExtension('EXT_color_buffer_float');
+  if (!ext) {
+      console.log('EXT_color_buffer_float not supported, falling back to alternative format');
+  }
 
-    // Initialize managers
-    glState = new GLState(gl);
-    resourceManager = new ResourceManager(gl);
+  // Initialize managers with texture configuration
+  glState = new GLState(gl);
+  resourceManager = new ResourceManager(gl);
 
-    // Load shaders and create programs
-    try {
-        await resourceManager.createProgram(
-            'particle',
-            'particle',
-            'particle'
-        );
+  // Load shaders and create programs
+  try {
+      await resourceManager.createProgram(
+          'particle',
+          'particle',
+          'particle'
+      );
 
-        await resourceManager.createProgram(
+      await resourceManager.createProgram(
           'update',
           'update',
           'update',
           ['vPosition', 'vVelocity', 'vTarget']
-        );
+      );
 
-        await resourceManager.createProgram(
-            'edge',
-            'edge',
-            'edge'
-        );
+      await resourceManager.createProgram(
+          'edge',
+          'edge',
+          'edge'
+      );
 
-        initGUI();
-        setupEventListeners();
-        updateBackgroundColor();
+      initGUI();
+      setupEventListeners();
+      updateBackgroundColor();
 
-    } catch (error) {
-        console.error('Failed to initialize WebGL:', error);
-        alert('Failed to initialize WebGL. Please check console for details.');
-    }
+  } catch (error) {
+      console.error('Failed to initialize WebGL:', error);
+      alert('Failed to initialize WebGL. Please check console for details.');
+  }
 }
 
 function initGUI() {

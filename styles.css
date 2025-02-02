@@ -285,6 +285,7 @@ td {
   font-weight: bold;
   padding: 8px;
   text-align: center;
+  z-index: 100;
 }
 
 .sticky-bottom {
