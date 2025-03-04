@@ -106,8 +106,8 @@ html, body{
 }
 
 #aboutText{
-  font-size: 52px;
-  font-family: "Kage Retro";
+  font-size: 48px;
+  font-family: "Courier New", system-ui;
   font-weight: 400;
   font-style: normal;
   display:block;
